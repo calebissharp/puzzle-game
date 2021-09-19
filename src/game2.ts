@@ -1,4 +1,5 @@
-import { mat4, vec3, vec4 } from "gl-matrix";
+import { mat4, vec3, vec4, vec2 } from "gl-matrix";
+import * as Stats from "stats.js";
 
 const PUZZLE_WIDTH = 16;
 const PUZZLE_HEIGHT = 16;
@@ -7,16 +8,6 @@ type TextureInfo = {
   width: number;
   height: number;
   texture: WebGLTexture;
-};
-
-type DrawInfo = {
-  x: number;
-  y: number;
-  dx: number;
-  dy: number;
-  xScale: number;
-  yScale: number;
-  textureInfo: TextureInfo;
 };
 
 //
@@ -119,30 +110,6 @@ async function main() {
   // setup GLSL program
   const program = initShaderProgram(gl, imageVsSource, imageFsSource);
 
-  // look up where the vertex data needs to go.
-  const positionLocation = gl.getAttribLocation(program, "a_position");
-  const texcoordLocation = gl.getAttribLocation(program, "a_texcoord");
-
-  // lookup uniforms
-  const matrixLocation = gl.getUniformLocation(program, "u_matrix");
-  const textureLocation = gl.getUniformLocation(program, "u_texture");
-
-  // Create a buffer.
-  const positionBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-
-  // Put a unit quad in the buffer
-  const positions = [0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1];
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-
-  // Create a buffer for texture coords
-  const texcoordBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
-
-  // Put texcoords in the buffer
-  const texcoords = [0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1];
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texcoords), gl.STATIC_DRAW);
-
   // creates a texture info { width: w, height: h, texture: tex }
   // The texture will start with 1x1 pixels and be updated
   // when the image has loaded
@@ -174,6 +141,7 @@ async function main() {
         texture: tex,
       };
       const img = new Image();
+      img.crossOrigin = "anonymous";
       img.addEventListener("load", function () {
         textureInfo.width = img.width;
         textureInfo.height = img.height;
@@ -196,7 +164,9 @@ async function main() {
 
   const textureInfos = [
     await loadImageAndCreateTextureInfo(
-      new URL("../puzzles/uv.jpg", import.meta.url).toString()
+      // new URL("../puzzles/store.jpg", import.meta.url).toString()
+      // "https://cdn.cnn.com/cnnnext/dam/assets/210915173350-biden-unilateral-agreement-exlarge-169.jpg"
+      "https://upload.wikimedia.org/wikipedia/commons/6/68/Joe_Biden_presidential_portrait.jpg"
     ),
   ];
 
@@ -215,35 +185,74 @@ async function main() {
     }
   }
 
+  let activePiece: Piece = undefined;
+  let maxZ = 1;
+
   window.addEventListener("mousedown", (e) => {
     dragging = true;
 
-    const projection = mat4.create();
-    mat4.ortho(
-      projection,
-      camera.x - (gl.canvas.width / 2) * camera.zoom,
-      camera.x + (gl.canvas.width / 2) * camera.zoom,
-      camera.y + (gl.canvas.height / 2) * camera.zoom,
-      camera.y - (gl.canvas.height / 2) * camera.zoom,
-      -1,
-      1
-    );
+    // Don't select piece if middle mouse button is pressed or if the meta key
+    // (cmd) is pressed
+    if (e.button !== 1 && !e.metaKey) {
+      const projection = mat4.create();
+      mat4.ortho(
+        projection,
+        camera.x - (gl.canvas.width / 2) * camera.zoom,
+        camera.x + (gl.canvas.width / 2) * camera.zoom,
+        camera.y + (gl.canvas.height / 2) * camera.zoom,
+        camera.y - (gl.canvas.height / 2) * camera.zoom,
+        -1,
+        1
+      );
+      mat4.invert(projection, projection);
 
-    const pos = vec4.fromValues(e.screenX, e.screenY, 100, 0);
+      const pos = vec3.fromValues(
+        (e.offsetX / window.innerWidth) * 2 - 1,
+        ((e.offsetY / window.innerHeight) * 2 - 1) * -1,
+        1
+      );
 
-    vec4.transformMat4(pos, pos, projection);
+      vec3.transformMat4(pos, pos, projection);
 
-    console.log(pos);
+      pieces.reverse();
+      const clickedPiece = pieces.find((piece) => {
+        if (
+          pos[0] > piece.position.x &&
+          pos[0] < piece.position.x + piece.sliceWidth &&
+          pos[1] > piece.position.y &&
+          pos[1] < piece.position.y + piece.sliceHeight
+        ) {
+          return true;
+        }
+      });
+      pieces.reverse();
+
+      if (clickedPiece) {
+        pieces.splice(pieces.indexOf(clickedPiece), 1);
+        pieces.push(clickedPiece);
+        activePiece = clickedPiece;
+        clickedPiece.active = true;
+      }
+    }
   });
 
   window.addEventListener("mouseup", (e) => {
     dragging = false;
+    if (activePiece) {
+      activePiece.active = false;
+      activePiece = undefined;
+    }
   });
 
   window.addEventListener("mousemove", (e) => {
     if (dragging) {
-      camera.x += -e.movementX * camera.zoom;
-      camera.y += -e.movementY * camera.zoom;
+      if (activePiece) {
+        activePiece.position.x += e.movementX * camera.zoom;
+        activePiece.position.y += e.movementY * camera.zoom;
+      } else {
+        camera.x += -e.movementX * camera.zoom;
+        camera.y += -e.movementY * camera.zoom;
+      }
     }
   });
 
@@ -251,8 +260,8 @@ async function main() {
     camera.zoom = clamp(0.1, 3, camera.zoom + e.deltaY * 0.005);
   });
 
-  function update(deltaTime: number) {
-    pieces.forEach((piece) => piece.update(deltaTime));
+  function update(deltaTime: number, elapsed: number) {
+    pieces.forEach((piece) => piece.update(deltaTime, elapsed));
   }
 
   function draw() {
@@ -281,14 +290,27 @@ async function main() {
     pieces.forEach((piece) => piece.draw(gl, projection));
   }
 
+  const stats = new Stats();
+  stats.showPanel(0);
+  document.body.append(stats.dom);
+
   let then = 0;
+  let start: number = undefined;
   function render(time: number) {
+    if (!start) {
+      start = time;
+    }
     const now = time * 0.001;
     const deltaTime = Math.min(0.1, now - then);
     then = now;
+    const elapsed = time - start;
 
-    update(deltaTime);
+    stats.begin();
+
+    update(deltaTime, elapsed);
     draw();
+
+    stats.end();
 
     requestAnimationFrame(render);
   }
@@ -301,9 +323,13 @@ function clamp(min: number, max: number, n: number) {
 }
 
 class Piece {
-  position = { x: 0, y: 0 };
+  position = { x: 0, y: 0, z: 0 };
+  correctPosition = { x: 0, y: 0, z: 0 };
+  scale = { x: 1, y: 1 };
   j: number;
   k: number;
+  active: boolean = false;
+  locked: boolean = false;
   sliceX: number;
   sliceY: number;
   sliceWidth: number;
@@ -338,6 +364,8 @@ class Piece {
 
     this.position.x = this.sliceWidth * this.j;
     this.position.y = this.sliceHeight * this.k;
+    this.correctPosition.x = this.position.x;
+    this.correctPosition.y = this.position.y;
 
     // Create a buffer.
     const positionBuffer = gl.createBuffer();
@@ -345,7 +373,13 @@ class Piece {
     this.positionBuffer = positionBuffer;
 
     // Put a unit quad in the buffer
-    var positions = [0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1];
+    var positions = [
+      0, 0, 0, 1, 1, 0,
+
+      1, 0, 0, 1, 1, 1,
+
+      1, 0.75, 1.25, 0.5, 1, 0.25,
+    ];
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
     // Create a buffer for texture coords
@@ -354,7 +388,13 @@ class Piece {
     this.texCoordBuffer = texcoordBuffer;
 
     // Put texcoords in the buffer
-    var texcoords = [0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1];
+    var texcoords = [
+      0, 0, 0, 1, 1, 0,
+
+      1, 0, 0, 1, 1, 1,
+
+      1, 0.75, 1.25, 0.5, 1, 0.25,
+    ];
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texcoords), gl.STATIC_DRAW);
 
     // look up where the vertex data needs to go.
@@ -411,7 +451,7 @@ class Piece {
       vec3.fromValues(
         this.sliceX / this.textureInfo.width,
         this.sliceY / this.textureInfo.height,
-        0
+        this.position.z
       )
     );
     mat4.scale(
@@ -430,8 +470,22 @@ class Piece {
     gl.uniform1i(this.textureLocation, 0);
 
     // draw the quad (2 triangles, 6 vertices)
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    gl.drawArrays(gl.TRIANGLES, 0, 9);
   }
 
-  update(delta: number) {}
+  update(delta: number, elapsed: number) {
+    // const deltaX = Math.sin(this.j + elapsed / 100) + 2;
+    // const deltaY = Math.cos(this.k + elapsed / 80) + 2;
+    // this.position.x = this.sliceWidth * this.j + deltaX;
+    // this.position.y = this.sliceHeight * this.k + deltaY;
+
+    // this.position.x += (Math.random() - 0.5) * 10;
+    // this.position.y += (Math.random() - 0.5) * 10;
+
+    if (this.active) {
+      this.scale = { x: 0.08, y: 0.08 };
+    }
+
+    this.scale = { x: 1, y: 1 };
+  }
 }
