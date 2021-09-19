@@ -1,0 +1,28 @@
+{
+  "name": "puzzle",
+  "version": "1.0.0",
+  "author": "Caleb Sharp <caleb.sharp@twostoryrobot.com>",
+  "source": "src/index.html",
+  "license": "MIT",
+  "scripts": {
+    "start": "parcel",
+    "build": "parcel build"
+  },
+  "devDependencies": {
+    "@parcel/transformer-image": "2.0.0-rc.0",
+    "@parcel/transformer-sass": "2.0.0-rc.0",
+    "parcel": "^2.0.0-rc.0"
+  },
+  "dependencies": {
+    "@types/lodash": "^4.14.173",
+    "@types/stats.js": "^0.17.0",
+    "@types/three": "^0.131.1",
+    "gl-matrix": "^3.3.0",
+    "lodash": "^4.17.21",
+    "mathjs": "^9.4.5",
+    "phaser": "^3.55.2",
+    "sharp": "^0.29.1",
+    "stats.js": "^0.17.0",
+    "three": "^0.132.2"
+  }
+}
