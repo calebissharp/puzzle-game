@@ -2,9 +2,18 @@ html,
 body {
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  // overflow: hidden;
 }
 
 #game {
   background-color: black;
+}
+
+.pieces-list {
+  display: grid;
+  grid-template-columns: repeat(15, 1fr);
+
+  > img {
+    width: auto;
+  }
 }

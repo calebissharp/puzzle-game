@@ -1,5 +1,6 @@
 import { mat4, vec3, vec4, vec2 } from "gl-matrix";
 import * as Stats from "stats.js";
+import { createPuzzlePieces } from "./puzzlePiece";
 
 const PUZZLE_WIDTH = 16;
 const PUZZLE_HEIGHT = 16;
@@ -92,9 +93,8 @@ void main() {
 }`;
 
 async function main() {
-  // Get A WebGL context
-  /** @type {HTMLCanvasElement} */
-  const canvas = document.querySelector<HTMLCanvasElement>("#game");
+  // const canvas = document.querySelector<HTMLCanvasElement>("#game");
+  const canvas = document.createElement("canvas");
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
   const gl = canvas.getContext("webgl");
@@ -169,6 +169,8 @@ async function main() {
       "https://upload.wikimedia.org/wikipedia/commons/6/68/Joe_Biden_presidential_portrait.jpg"
     ),
   ];
+
+  const images = await createPuzzlePieces();
 
   const camera = {
     x: canvas.width / 2,
