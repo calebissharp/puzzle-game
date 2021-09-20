@@ -60,6 +60,11 @@ export class PuzzleGame {
 
     this.image = await loadImage(this.imageUrl);
 
+    this.camera.x = this.image.width / 2;
+    this.camera.y = this.image.height / 2;
+    this.camera.zoom = 5;
+    this.camera.updateProjection(this.gl.canvas.width, this.gl.canvas.height);
+
     const pieceTextures = await genPuzzlePieceTextures({
       image: this.image,
       puzzleWidth: this.PUZZLE_WIDTH,
