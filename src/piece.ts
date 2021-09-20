@@ -158,18 +158,18 @@ export class Piece {
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
 
+  jiggle() {
+    this.position.x += (Math.random() - 0.5) * 10;
+    this.position.y += (Math.random() - 0.5) * 10;
+  }
+
   update(delta: number, elapsed: number) {
-    // const deltaX = Math.sin(this.j + elapsed / 100) + 2;
-    // const deltaY = Math.cos(this.k + elapsed / 80) + 2;
-    // this.position.x = this.sliceWidth * this.j + deltaX;
-    // this.position.y = this.sliceHeight * this.k + deltaY;
     if (!this.locked) {
-      this.position.x += (Math.random() - 0.5) * 10;
-      this.position.y += (Math.random() - 0.5) * 10;
+      // this.jiggle();
     }
   }
 
-  checkPosition() {
+  checkPosition(otherPieces: Piece[]) {
     const thresholdX = this.sliceWidth * 0.2;
     const thresholdY = this.sliceHeight * 0.2;
 
@@ -183,7 +183,80 @@ export class Piece {
       this.locked = true;
     }
 
+    // check right side
+    const rightPiece = otherPieces.find(
+      (piece) =>
+        piece.j === this.j + 1 &&
+        piece.k === this.k &&
+        Math.abs(this.bounds.right - piece.bounds.left) < thresholdX &&
+        Math.abs(this.centerY - piece.centerY) < thresholdY
+    );
+
+    // check left side
+    const leftPiece = otherPieces.find(
+      (piece) =>
+        piece.j === this.j - 1 &&
+        piece.k === this.k &&
+        Math.abs(this.bounds.left - piece.bounds.right) < thresholdX &&
+        Math.abs(this.centerY - piece.centerY) < thresholdY
+    );
+
+    // check bottom side
+    const bottomPiece = otherPieces.find(
+      (piece) =>
+        piece.j === this.j &&
+        piece.k === this.k + 1 &&
+        Math.abs(this.bounds.bottom - piece.bounds.top) < thresholdX &&
+        Math.abs(this.centerX - piece.centerX) < thresholdY
+    );
+
+    // check top side
+    const topPiece = otherPieces.find(
+      (piece) =>
+        piece.j === this.j &&
+        piece.k === this.k - 1 &&
+        Math.abs(this.bounds.top - piece.bounds.bottom) < thresholdX &&
+        Math.abs(this.centerX - piece.centerX) < thresholdY
+    );
+
+    if (rightPiece) {
+      this.position.x =
+        rightPiece.bounds.left - this.bounds.width - this.imagePadding;
+      this.position.y = rightPiece.position.y;
+    } else if (leftPiece) {
+      this.position.x =
+        leftPiece.bounds.left + this.bounds.width - this.imagePadding;
+      this.position.y = leftPiece.position.y;
+    } else if (topPiece) {
+      this.position.y =
+        topPiece.bounds.top + this.bounds.height - this.imagePadding;
+      this.position.x = topPiece.position.x;
+    } else if (bottomPiece) {
+      this.position.y =
+        bottomPiece.bounds.top - this.bounds.height - this.imagePadding;
+      this.position.x = bottomPiece.position.x;
+    }
+
     return isCorrect;
+  }
+
+  get bounds() {
+    return {
+      left: this.position.x + this.imagePadding,
+      right: this.position.x + this.sliceWidth - this.imagePadding,
+      top: this.position.y + this.imagePadding,
+      bottom: this.position.y + this.sliceHeight - this.imagePadding,
+      width: this.sliceWidth - this.imagePadding * 2,
+      height: this.sliceHeight - this.imagePadding * 2,
+    };
+  }
+
+  get centerX() {
+    return this.position.x + this.sliceWidth / 2;
+  }
+
+  get centerY() {
+    return this.position.y + this.sliceHeight / 2;
   }
 }
 

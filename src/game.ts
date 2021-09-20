@@ -182,7 +182,9 @@ export class PuzzleGame {
   onMouseUp() {
     this.dragging = false;
     if (this.activePiece) {
-      this.activePiece.checkPosition();
+      this.activePiece.checkPosition(
+        this.pieces.filter((piece) => piece !== this.activePiece)
+      );
 
       this.activePiece = undefined;
     }
@@ -243,12 +245,12 @@ export class PuzzleGame {
     }
   }
 
-  scramblePieces() {
-    const positions = shuffle(
-      Array.from({
-        length: this.PUZZLE_WIDTH * this.PUZZLE_HEIGHT,
-      }).map((_, i) => i)
-    );
+  scramblePieces(shufflePos = true) {
+    const allPositions = Array.from({
+      length: this.PUZZLE_WIDTH * this.PUZZLE_HEIGHT,
+    }).map((_, i) => i);
+
+    const positions = shufflePos ? shuffle(allPositions) : allPositions;
 
     for (const [i, piece] of this.pieces.entries()) {
       const row = Math.floor(positions[i] / this.PUZZLE_WIDTH);

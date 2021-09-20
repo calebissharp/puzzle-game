@@ -3,6 +3,7 @@
     "module": "ESNext",
     "moduleResolution": "node",
     "noImplicitAny": true,
-    "downlevelIteration": true
+    "downlevelIteration": true,
+    "target": "es5"
   }
 }
