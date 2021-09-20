@@ -1,4 +1,4 @@
-export function imageToBlob(image: ImageBitmap) {
+export function imageToBlob(image: HTMLImageElement) {
   return new Promise<Blob>((resolve) => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");

@@ -52,7 +52,7 @@ export class PuzzleGame {
     this.stats = new Stats();
     this.stats.showPanel(0);
 
-    window.addEventListener("resize", () => {});
+    window.addEventListener("resize", this.onResize.bind(this));
   }
 
   async load() {

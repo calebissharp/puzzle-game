@@ -1,8 +1,6 @@
 import { chunk, flatten, reverse } from "lodash";
 import { drawPoints } from "./curve";
-import { random } from "./util";
-
-const MAX_JOINER_HEIGHT = 40;
+import { imageToBlob, random } from "./util";
 
 export type PieceTexture = {
   j: number;
@@ -43,6 +41,9 @@ export async function genPuzzlePieceTextures({
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
       ctx.imageSmoothingEnabled = true;
+
+      const MAX_JOINER_HEIGHT = Math.max(pieceWidth, pieceHeight) * 0.2;
+
       canvas.width = pieceWidth + MAX_JOINER_HEIGHT * 2;
       canvas.height = pieceHeight + MAX_JOINER_HEIGHT * 2;
 
@@ -74,6 +75,7 @@ export async function genPuzzlePieceTextures({
         pieceHeight,
         k < puzzleHeight - 1,
         j < puzzleWidth - 1,
+        MAX_JOINER_HEIGHT,
         pieceLeft?.pointsRight,
         pieceAbove?.pointsBottom,
         pieceBorder
@@ -123,6 +125,7 @@ function drawPiece(
   pieceHeight: number,
   drawBottom = true,
   drawRight = true,
+  MAX_JOINER_HEIGHT: number,
   leftPoints?: number[],
   topPoints?: number[],
   drawBorder?: boolean
