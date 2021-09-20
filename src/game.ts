@@ -1,8 +1,10 @@
 import { mat4, vec3 } from "gl-matrix";
+import { shuffle } from "lodash";
 import * as Stats from "stats.js";
 import { Camera } from "./camera";
 import { getPieceShaderProgram, getTextureInfo, Piece } from "./piece";
 import { genPuzzlePieceTextures } from "./pieceGen";
+import { Rectangle } from "./rectangle";
 import { clamp, loadImage } from "./util";
 
 export class PuzzleGame {
@@ -24,6 +26,8 @@ export class PuzzleGame {
 
   pieces: Piece[] = [];
   activePiece?: Piece;
+
+  background: Rectangle;
 
   stats: Stats;
 
@@ -65,6 +69,15 @@ export class PuzzleGame {
     this.camera.zoom = 5;
     this.camera.updateProjection(this.gl.canvas.width, this.gl.canvas.height);
 
+    this.background = new Rectangle(
+      this.gl,
+      0,
+      0,
+      this.image.width,
+      this.image.height
+    );
+    await this.background.load(this.gl);
+
     const pieceTextures = await genPuzzlePieceTextures({
       image: this.image,
       puzzleWidth: this.PUZZLE_WIDTH,
@@ -74,10 +87,10 @@ export class PuzzleGame {
 
     for (let j = 0; j < this.PUZZLE_WIDTH; j++) {
       for (let k = 0; k < this.PUZZLE_HEIGHT; k++) {
-        const textureInfo = getTextureInfo(
-          this.gl,
-          pieceTextures.find((pt) => pt.j === j && pt.k === k)
+        const pieceTexture = pieceTextures.find(
+          (pt) => pt.j === j && pt.k === k
         );
+        const textureInfo = getTextureInfo(this.gl, pieceTexture);
         this.pieces.push(
           new Piece({
             gl: this.gl,
@@ -87,12 +100,19 @@ export class PuzzleGame {
             puzzleHeight: this.PUZZLE_HEIGHT,
             puzzleImageWidth: this.image.width,
             puzzleImageHeight: this.image.height,
+            imagePadding: pieceTexture.imagePadding,
             j,
             k,
           })
         );
       }
     }
+
+    for (const piece of this.pieces) {
+      piece.locked = true;
+    }
+
+    this.scramblePieces();
 
     window.addEventListener("mousedown", this.onMouseDown.bind(this));
     window.addEventListener("mouseup", this.onMouseUp.bind(this));
@@ -115,8 +135,10 @@ export class PuzzleGame {
     // Tell WebGL how to convert from clip space to pixels
     this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
 
-    this.gl.clearColor(0, 0, 1, 1);
+    this.gl.clearColor(20 / 255, 20 / 255, 20 / 255, 1);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+
+    this.background.render(this.gl, this.camera.projection);
 
     this.pieces.forEach((piece) => piece.draw(this.gl, this.camera.projection));
   }
@@ -160,7 +182,8 @@ export class PuzzleGame {
   onMouseUp() {
     this.dragging = false;
     if (this.activePiece) {
-      this.activePiece.active = false;
+      this.activePiece.checkPosition();
+
       this.activePiece = undefined;
     }
   }
@@ -195,7 +218,7 @@ export class PuzzleGame {
       });
       this.pieces.reverse();
 
-      if (clickedPiece) {
+      if (clickedPiece && !clickedPiece.locked) {
         this.pieces.splice(this.pieces.indexOf(clickedPiece), 1);
         this.pieces.push(clickedPiece);
         this.activePiece = clickedPiece;
@@ -217,6 +240,31 @@ export class PuzzleGame {
           this.gl.canvas.height
         );
       }
+    }
+  }
+
+  scramblePieces() {
+    const positions = shuffle(
+      Array.from({
+        length: this.PUZZLE_WIDTH * this.PUZZLE_HEIGHT,
+      }).map((_, i) => i)
+    );
+
+    for (const [i, piece] of this.pieces.entries()) {
+      const row = Math.floor(positions[i] / this.PUZZLE_WIDTH);
+
+      if (row > Math.ceil(this.PUZZLE_HEIGHT / 2)) {
+        piece.position.y =
+          -(row - Math.ceil(this.PUZZLE_HEIGHT / 2)) * piece.sliceHeight;
+      } else {
+        piece.position.y = this.image.height + row * piece.sliceHeight;
+      }
+
+      piece.position.x =
+        positions[i] * piece.sliceWidth -
+        piece.sliceWidth * this.PUZZLE_WIDTH * row;
+
+      piece.locked = false;
     }
   }
 }

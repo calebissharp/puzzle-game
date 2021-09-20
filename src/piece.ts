@@ -10,6 +10,7 @@ type PieceOptions = {
   puzzleHeight: number;
   puzzleImageWidth: number;
   puzzleImageHeight: number;
+  imagePadding?: number;
   j: number;
   k: number;
 };
@@ -26,6 +27,7 @@ export class Piece {
   sliceY: number;
   sliceWidth: number;
   sliceHeight: number;
+  imagePadding: number;
 
   textureInfo: TextureInfo;
   program: WebGLProgram;
@@ -47,6 +49,7 @@ export class Piece {
     puzzleHeight,
     puzzleImageWidth,
     puzzleImageHeight,
+    imagePadding = 0,
     j,
     k,
   }: PieceOptions) {
@@ -63,8 +66,10 @@ export class Piece {
     this.sliceX = pieceBoundsWidth * this.j;
     this.sliceY = pieceBoundsHeight * this.k;
 
-    this.position.x = pieceBoundsWidth * this.j;
-    this.position.y = pieceBoundsHeight * this.k;
+    this.imagePadding = imagePadding;
+
+    this.position.x = pieceBoundsWidth * this.j - imagePadding;
+    this.position.y = pieceBoundsHeight * this.k - imagePadding;
     this.correctPosition.x = this.position.x;
     this.correctPosition.y = this.position.y;
 
@@ -158,8 +163,27 @@ export class Piece {
     // const deltaY = Math.cos(this.k + elapsed / 80) + 2;
     // this.position.x = this.sliceWidth * this.j + deltaX;
     // this.position.y = this.sliceHeight * this.k + deltaY;
-    // this.position.x += (Math.random() - 0.5) * 10;
-    // this.position.y += (Math.random() - 0.5) * 10;
+    if (!this.locked) {
+      this.position.x += (Math.random() - 0.5) * 10;
+      this.position.y += (Math.random() - 0.5) * 10;
+    }
+  }
+
+  checkPosition() {
+    const thresholdX = this.sliceWidth * 0.2;
+    const thresholdY = this.sliceHeight * 0.2;
+
+    const isCorrect =
+      Math.abs(this.position.x - this.correctPosition.x) < thresholdX &&
+      Math.abs(this.position.y - this.correctPosition.y) < thresholdY;
+
+    if (isCorrect) {
+      this.position.x = this.correctPosition.x;
+      this.position.y = this.correctPosition.y;
+      this.locked = true;
+    }
+
+    return isCorrect;
   }
 }
 

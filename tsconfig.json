@@ -2,6 +2,7 @@
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "node",
-    "noImplicitAny": true
+    "noImplicitAny": true,
+    "downlevelIteration": true
   }
 }

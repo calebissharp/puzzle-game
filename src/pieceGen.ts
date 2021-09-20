@@ -5,6 +5,7 @@ import { imageToBlob, random } from "./util";
 export type PieceTexture = {
   j: number;
   k: number;
+  imagePadding: number;
   image: HTMLImageElement;
 };
 
@@ -34,6 +35,7 @@ export async function genPuzzlePieceTextures({
     j: number;
     k: number;
     image: HTMLImageElement;
+    imagePadding: number;
   }[] = Array.from({ length: puzzleHeight * puzzleWidth });
 
   for (let j = 0; j < puzzleWidth; j++) {
@@ -106,6 +108,7 @@ export async function genPuzzlePieceTextures({
         j,
         k,
         image: pieceImage,
+        imagePadding: MAX_JOINER_HEIGHT,
       };
     }
   }
@@ -114,6 +117,7 @@ export async function genPuzzlePieceTextures({
     j: piece.j,
     k: piece.k,
     image: piece.image,
+    imagePadding: piece.imagePadding,
   }));
 }
 
