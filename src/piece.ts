@@ -32,6 +32,8 @@ export class Piece {
   textureInfo: TextureInfo;
   program: WebGLProgram;
 
+  attachedPieces: Set<Piece> = new Set();
+
   positionBuffer: WebGLBuffer;
   texCoordBuffer: WebGLBuffer;
 
@@ -65,6 +67,8 @@ export class Piece {
     this.sliceHeight = this.textureInfo.height;
     this.sliceX = pieceBoundsWidth * this.j;
     this.sliceY = pieceBoundsHeight * this.k;
+
+    this.attachedPieces.add(this);
 
     this.imagePadding = imagePadding;
 
@@ -181,6 +185,12 @@ export class Piece {
       this.position.x = this.correctPosition.x;
       this.position.y = this.correctPosition.y;
       this.locked = true;
+
+      for (const attachedPiece of this.attachedPieces) {
+        attachedPiece.position.x = attachedPiece.correctPosition.x;
+        attachedPiece.position.y = attachedPiece.correctPosition.y;
+        attachedPiece.locked = true;
+      }
     }
 
     // check right side
@@ -220,21 +230,49 @@ export class Piece {
     );
 
     if (rightPiece) {
-      this.position.x =
-        rightPiece.bounds.left - this.bounds.width - this.imagePadding;
-      this.position.y = rightPiece.position.y;
+      this.setAllPos(
+        rightPiece.bounds.left - this.bounds.width - this.imagePadding,
+        rightPiece.position.y
+      );
+
+      this.attachedPieces = new Set([
+        ...this.attachedPieces,
+        ...rightPiece.attachedPieces,
+      ]);
     } else if (leftPiece) {
-      this.position.x =
-        leftPiece.bounds.left + this.bounds.width - this.imagePadding;
-      this.position.y = leftPiece.position.y;
+      this.setAllPos(
+        leftPiece.bounds.left + this.bounds.width - this.imagePadding,
+        leftPiece.position.y
+      );
+
+      this.attachedPieces = new Set([
+        ...this.attachedPieces,
+        ...leftPiece.attachedPieces,
+      ]);
     } else if (topPiece) {
-      this.position.y =
-        topPiece.bounds.top + this.bounds.height - this.imagePadding;
-      this.position.x = topPiece.position.x;
+      this.setAllPos(
+        topPiece.position.x,
+        topPiece.bounds.top + this.bounds.height - this.imagePadding
+      );
+
+      this.attachedPieces = new Set([
+        ...this.attachedPieces,
+        ...topPiece.attachedPieces,
+      ]);
     } else if (bottomPiece) {
-      this.position.y =
-        bottomPiece.bounds.top - this.bounds.height - this.imagePadding;
-      this.position.x = bottomPiece.position.x;
+      this.setAllPos(
+        bottomPiece.position.x,
+        bottomPiece.bounds.top - this.bounds.height - this.imagePadding
+      );
+
+      this.attachedPieces = new Set([
+        ...this.attachedPieces,
+        ...bottomPiece.attachedPieces,
+      ]);
+    }
+
+    for (const attachedPiece of this.attachedPieces) {
+      attachedPiece.attachedPieces = this.attachedPieces;
     }
 
     return isCorrect;
@@ -257,6 +295,28 @@ export class Piece {
 
   get centerY() {
     return this.position.y + this.sliceHeight / 2;
+  }
+
+  moveAllPos(deltaX: number, deltaY: number) {
+    for (const attachedPiece of this.attachedPieces) {
+      attachedPiece.position.x += deltaX;
+      attachedPiece.position.y += deltaY;
+    }
+  }
+
+  setAllPos(x: number, y: number) {
+    const deltaX = x - this.position.x;
+    const deltaY = y - this.position.y;
+
+    for (const attachedPiece of this.attachedPieces) {
+      if (attachedPiece === this) {
+        this.position.x = x;
+        this.position.y = y;
+      } else {
+        attachedPiece.position.x += deltaX;
+        attachedPiece.position.y += deltaY;
+      }
+    }
   }
 }
 

@@ -112,7 +112,7 @@ export class PuzzleGame {
       piece.locked = true;
     }
 
-    this.scramblePieces();
+    this.scramblePieces(false);
 
     window.addEventListener("mousedown", this.onMouseDown.bind(this));
     window.addEventListener("mouseup", this.onMouseUp.bind(this));
@@ -182,9 +182,14 @@ export class PuzzleGame {
   onMouseUp() {
     this.dragging = false;
     if (this.activePiece) {
-      this.activePiece.checkPosition(
-        this.pieces.filter((piece) => piece !== this.activePiece)
-      );
+      for (const attachedPiece of this.activePiece.attachedPieces) {
+        // Check position of each piece in group
+        attachedPiece.checkPosition(
+          this.pieces.filter(
+            (piece) => !attachedPiece.attachedPieces.has(piece)
+          )
+        );
+      }
 
       this.activePiece = undefined;
     }
@@ -231,8 +236,12 @@ export class PuzzleGame {
   onMouseMove(e: MouseEvent) {
     if (this.dragging) {
       if (this.activePiece) {
-        this.activePiece.position.x += e.movementX * this.camera.zoom;
-        this.activePiece.position.y += e.movementY * this.camera.zoom;
+        // this.activePiece.position.x += e.movementX * this.camera.zoom;
+        // this.activePiece.position.y += e.movementY * this.camera.zoom;
+        this.activePiece.moveAllPos(
+          e.movementX * this.camera.zoom,
+          e.movementY * this.camera.zoom
+        );
       } else {
         this.camera.x += -e.movementX * this.camera.zoom;
         this.camera.y += -e.movementY * this.camera.zoom;
