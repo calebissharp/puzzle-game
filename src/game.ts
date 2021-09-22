@@ -49,6 +49,7 @@ export class PuzzleGame {
 
     this.gl = gl;
 
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     gl.enable(gl.BLEND);
 
     this.camera = new Camera(this.gl.canvas.width, this.gl.canvas.height);

@@ -2,3 +2,7 @@ node_modules
 dist
 yarn-error.log
 .parcel-cache
+.cache
+target
+pkg
+wasm-pack.log

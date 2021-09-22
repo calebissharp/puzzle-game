@@ -375,10 +375,7 @@ uniform sampler2D u_texture;
 void main() {
   vec4 texColor = texture2D(u_texture, v_texcoord);
 
-  if(texColor.a < 0.5)
-    discard;
-
-  gl_FragColor = texColor;
+  gl_FragColor = texColor * texColor.a;
 }`;
 
   const program = initShaderProgram(gl, pieceVsSource, pieceFsSource);

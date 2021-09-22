@@ -1,6 +1,6 @@
 import { chunk, flatten, reverse } from "lodash";
 import { drawPoints } from "./curve";
-import { imageToBlob, random } from "./util";
+import { random } from "./util";
 
 export type PieceTexture = {
   j: number;
@@ -24,8 +24,13 @@ export async function genPuzzlePieceTextures({
   drawBounds = false,
   pieceBorder = false,
 }: CreatePuzzlePiecesOptions): Promise<PieceTexture[]> {
-  const pieceWidth = image.width / puzzleWidth;
-  const pieceHeight = image.height / puzzleHeight;
+  const pieceWidth = Math.ceil(image.width / puzzleWidth);
+  const pieceHeight = Math.ceil(image.height / puzzleHeight);
+
+  const MAX_JOINER_HEIGHT = Math.ceil(Math.max(pieceWidth, pieceHeight) * 0.2);
+
+  const canvasWidth = Math.ceil(pieceWidth + MAX_JOINER_HEIGHT * 2);
+  const canvasHeight = Math.ceil(pieceHeight + MAX_JOINER_HEIGHT * 2);
 
   const pieceImages: HTMLImageElement[] = [];
 
@@ -42,12 +47,11 @@ export async function genPuzzlePieceTextures({
     for (let k = 0; k < puzzleHeight; k++) {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+
       ctx.imageSmoothingEnabled = true;
-
-      const MAX_JOINER_HEIGHT = Math.max(pieceWidth, pieceHeight) * 0.2;
-
-      canvas.width = pieceWidth + MAX_JOINER_HEIGHT * 2;
-      canvas.height = pieceHeight + MAX_JOINER_HEIGHT * 2;
+      ctx.imageSmoothingQuality = "high";
 
       if (drawBounds) {
         // Draw piece bounds
@@ -56,8 +60,8 @@ export async function genPuzzlePieceTextures({
 
         ctx.beginPath();
         ctx.rect(
-          (canvas.width - pieceWidth) / 2,
-          (canvas.height - pieceHeight) / 2,
+          (canvasWidth - pieceWidth) / 2,
+          (canvasHeight - pieceHeight) / 2,
           pieceWidth,
           pieceHeight
         );
@@ -71,17 +75,21 @@ export async function genPuzzlePieceTextures({
 
       const [pointsBottom, pointsRight] = drawPiece(
         ctx,
-        canvas.width / 2,
-        canvas.height / 2,
+        canvasWidth / 2,
+        canvasHeight / 2,
         pieceWidth,
         pieceHeight,
         k < puzzleHeight - 1,
         j < puzzleWidth - 1,
         MAX_JOINER_HEIGHT,
+        canvasWidth,
+        canvasHeight,
         pieceLeft?.pointsRight,
         pieceAbove?.pointsBottom,
         pieceBorder
       );
+
+      ctx.globalCompositeOperation = "source-in";
 
       ctx.drawImage(
         image,
@@ -91,14 +99,20 @@ export async function genPuzzlePieceTextures({
         pieceHeight + MAX_JOINER_HEIGHT * 2,
         0,
         0,
-        canvas.width,
-        canvas.height
+        canvasWidth,
+        canvasHeight
       );
+
+      ctx.globalCompositeOperation = "source-over";
+
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "#828282";
+      ctx.stroke();
 
       const url = canvas.toDataURL("image/png");
       const pieceImage = new Image();
-      pieceImage.width = canvas.width;
-      pieceImage.height = canvas.height;
+      pieceImage.width = canvasWidth;
+      pieceImage.height = canvasHeight;
       pieceImage.src = url;
       pieceImages.push(pieceImage);
 
@@ -130,17 +144,16 @@ function drawPiece(
   drawBottom = true,
   drawRight = true,
   MAX_JOINER_HEIGHT: number,
+  canvasWidth: number,
+  canvasHeight: number,
   leftPoints?: number[],
   topPoints?: number[],
   drawBorder?: boolean
 ) {
-  // Given the center point of the piece (cx,cy) and the side length (s)
-  // The single side "outy" design is below
-  // Use this single design (with transforms/mirroring) to make all pieces
-  const leftSide = (ctx.canvas.width - pieceWidth) / 2;
+  const leftSide = (canvasWidth - pieceWidth) / 2;
   const rightSide = leftSide + pieceWidth;
-  const topSide = (ctx.canvas.height - pieceHeight) / 2;
-  const bottomSide = ctx.canvas.height - MAX_JOINER_HEIGHT;
+  const topSide = (canvasHeight - pieceHeight) / 2;
+  const bottomSide = canvasHeight - MAX_JOINER_HEIGHT;
 
   const flippedLeftPoints = leftPoints?.map((p, i) => {
     // x coord
@@ -203,62 +216,52 @@ function drawPiece(
     drawBottom ? pointsBottom[pointsBottom.length - 1] : bottomSide,
   ];
 
-  const path = new Path2D();
+  ctx.beginPath();
 
   const tension = 1;
 
   if (flippedLeftPoints) {
     const flippedLeftPointsRev = flatten(reverse(chunk(flippedLeftPoints, 2)));
-    path.moveTo(flippedLeftPointsRev[0], flippedLeftPointsRev[1]);
-    drawPoints(path, flippedLeftPointsRev, tension, false, 100);
+    ctx.moveTo(flippedLeftPointsRev[0], flippedLeftPointsRev[1]);
+    drawPoints(ctx, flippedLeftPointsRev, tension, false, 100);
   } else {
-    path.moveTo(leftSide, bottomSide);
+    ctx.moveTo(leftSide, bottomSide);
     if (flippedTopPoints) {
-      path.lineTo(flippedTopPoints[0], flippedTopPoints[1]);
+      ctx.lineTo(flippedTopPoints[0], flippedTopPoints[1]);
     } else {
-      path.lineTo(leftSide, topSide);
+      ctx.lineTo(leftSide, topSide);
     }
   }
 
   if (flippedTopPoints) {
-    drawPoints(path, flippedTopPoints, tension, false, 100);
+    drawPoints(ctx, flippedTopPoints, tension, false, 100);
   } else {
-    path.lineTo(pointsRight[0], pointsRight[1]);
+    ctx.lineTo(pointsRight[0], pointsRight[1]);
   }
 
   if (drawRight) {
-    drawPoints(path, pointsRight, tension, false, 100);
+    drawPoints(ctx, pointsRight, tension, false, 100);
   } else {
-    path.lineTo(rightSide, bottomSide);
+    ctx.lineTo(rightSide, bottomSide);
   }
 
   if (drawBottom) {
     const bottomPointsRev = flatten(reverse(chunk(pointsBottom, 2)));
-    drawPoints(path, bottomPointsRev, tension, false, 100);
+    drawPoints(ctx, bottomPointsRev, tension, false, 100);
   } else {
     if (drawRight) {
-      path.lineTo(
+      ctx.lineTo(
         pointsRight[pointsRight.length - 2],
         pointsRight[pointsRight.length - 1]
       );
     } else {
-      path.lineTo(rightSide, bottomSide);
+      ctx.lineTo(rightSide, bottomSide);
     }
   }
 
-  path.closePath();
+  ctx.closePath();
 
-  ctx.lineWidth = 0;
-  ctx.clip(path);
-
-  if (drawBorder) {
-    ctx.lineWidth = 10;
-    ctx.strokeStyle = "white";
-    ctx.stroke(path);
-  }
-
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.globalCompositeOperation = "source-over";
+  ctx.fill();
 
   return [drawBottom ? pointsBottom : null, drawRight ? pointsRight : null];
 }

@@ -1,5 +1,5 @@
 export function drawPoints(
-  ctx: Path2D,
+  ctx: CanvasRenderingContext2D | Path2D,
   ptsa: number[],
   tension: number,
   isClosed: boolean,
@@ -92,7 +92,7 @@ function getCurvePoints(
   return res;
 }
 
-function drawLines(ctx: Path2D, pts: number[]) {
+function drawLines(ctx: CanvasRenderingContext2D | Path2D, pts: number[]) {
   ctx.lineTo(pts[0], pts[1]);
   for (let i = 2; i < pts.length - 1; i += 2) ctx.lineTo(pts[i], pts[i + 1]);
 }
