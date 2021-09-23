@@ -1,10 +1,13 @@
 import { mat4, vec3 } from "gl-matrix";
+import { throttle } from "lodash";
+import { Camera } from "./camera";
 import { PieceTexture } from "./pieceGen";
 import { initShaderProgram, TextureInfo } from "./render";
 
 type PieceOptions = {
   gl: WebGLRenderingContext;
   textureInfo: TextureInfo;
+  bumpMap: TextureInfo;
   program: WebGLProgram;
   puzzleWidth: number;
   puzzleHeight: number;
@@ -30,22 +33,31 @@ export class Piece {
   imagePadding: number;
 
   textureInfo: TextureInfo;
+  bumpMap: TextureInfo;
   program: WebGLProgram;
 
   attachedPieces: Set<Piece> = new Set();
+
+  puzzleImageWidth: number;
+  puzzleImageHeight: number;
 
   positionBuffer: WebGLBuffer;
   texCoordBuffer: WebGLBuffer;
 
   positionLocation: number;
   texcoordLocation: number;
+  fragPosLocation: number;
+  viewPosLocation: WebGLUniformLocation;
+  lightPosLocation: WebGLUniformLocation;
   matrixLocation: WebGLUniformLocation;
   textureMatrixLocation: WebGLUniformLocation;
   textureLocation: WebGLUniformLocation;
+  bumpMapLocation: WebGLUniformLocation;
 
   constructor({
     gl,
     textureInfo,
+    bumpMap,
     program,
     puzzleWidth,
     puzzleHeight,
@@ -56,9 +68,13 @@ export class Piece {
     k,
   }: PieceOptions) {
     this.textureInfo = textureInfo;
+    this.bumpMap = bumpMap;
     this.j = j;
     this.k = k;
     this.program = program;
+
+    this.puzzleImageWidth = puzzleImageWidth;
+    this.puzzleImageHeight = puzzleImageHeight;
 
     const pieceBoundsWidth = puzzleImageWidth / puzzleWidth;
     const pieceBoundsHeight = puzzleImageHeight / puzzleHeight;
@@ -106,6 +122,7 @@ export class Piece {
     // look up where the vertex data needs to go.
     this.positionLocation = gl.getAttribLocation(this.program, "a_position");
     this.texcoordLocation = gl.getAttribLocation(this.program, "a_texcoord");
+    this.fragPosLocation = gl.getAttribLocation(this.program, "ts_frag_pos");
 
     // lookup uniforms
     this.matrixLocation = gl.getUniformLocation(this.program, "u_matrix");
@@ -114,10 +131,16 @@ export class Piece {
       "u_textureMatrix"
     );
     this.textureLocation = gl.getUniformLocation(this.program, "u_texture");
+    this.bumpMapLocation = gl.getUniformLocation(this.program, "u_bumpmap");
+    this.viewPosLocation = gl.getUniformLocation(this.program, "ts_view_pos");
+    this.lightPosLocation = gl.getUniformLocation(this.program, "ts_light_pos");
   }
 
-  draw(gl: WebGLRenderingContext, camera: mat4) {
+  draw(gl: WebGLRenderingContext, camera: Camera) {
+    gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.textureInfo.texture);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, this.bumpMap.texture);
 
     // Tell WebGL to use our shader program pair
     gl.useProgram(this.program);
@@ -136,7 +159,7 @@ export class Piece {
     // this matrix will translate our quad to dstX, dstY
     mat4.translate(
       matrix,
-      camera,
+      camera.projection,
       vec3.fromValues(this.position.x, this.position.y, 0)
     );
 
@@ -155,8 +178,18 @@ export class Piece {
 
     gl.uniformMatrix4fv(this.textureMatrixLocation, false, texMatrix);
 
+    const cameraPos = vec3.fromValues(camera.x, camera.y, 5);
+    vec3.transformMat4(cameraPos, cameraPos, camera.projection);
+    const lightPos = vec3.fromValues(camera.x, camera.y, -0.1);
+    vec3.transformMat4(lightPos, lightPos, camera.projection);
+
+    gl.uniform3fv(this.viewPosLocation, cameraPos);
+
+    gl.uniform3fv(this.lightPosLocation, lightPos);
+
     // Tell the shader to get the texture from texture unit 0
     gl.uniform1i(this.textureLocation, 0);
+    gl.uniform1i(this.bumpMapLocation, 1);
 
     // draw the quad (2 triangles, 6 vertices)
     gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -322,19 +355,12 @@ export class Piece {
 
 export function getTextureInfo(
   gl: WebGLRenderingContext,
-  pieceTexture: PieceTexture
+  image: HTMLImageElement
 ): TextureInfo {
   const tex = gl.createTexture();
 
   gl.bindTexture(gl.TEXTURE_2D, tex);
-  gl.texImage2D(
-    gl.TEXTURE_2D,
-    0,
-    gl.RGBA,
-    gl.RGBA,
-    gl.UNSIGNED_BYTE,
-    pieceTexture.image
-  );
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 
   // let's assume all images are not a power of 2
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -342,8 +368,8 @@ export function getTextureInfo(
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 
   const textureInfo = {
-    width: pieceTexture.image.width, // we don't know the size until it loads
-    height: pieceTexture.image.height,
+    width: image.width,
+    height: image.height,
     texture: tex,
   };
 
@@ -354,28 +380,85 @@ export function getPieceShaderProgram(gl: WebGLRenderingContext) {
   const pieceVsSource = `
 attribute vec4 a_position;
 attribute vec2 a_texcoord;
- 
+
+// uniform vec3 ts_view_pos;
 uniform mat4 u_matrix;
 uniform mat4 u_textureMatrix;
  
 varying vec2 v_texcoord;
+
+// varying vec3 ts_light_pos; 
+// varying vec3 ts_view_pos;  
+varying vec3 ts_frag_pos;  
+
+mat3 transpose(in mat3 inMatrix)
+{
+    vec3 i0 = inMatrix[0];
+    vec3 i1 = inMatrix[1];
+    vec3 i2 = inMatrix[2];
+
+    mat3 outMatrix = mat3(
+        vec3(i0.x, i1.x, i2.x),
+        vec3(i0.y, i1.y, i2.y),
+        vec3(i0.z, i1.z, i2.z)
+    );
+
+    return outMatrix;
+}
  
 void main() {
    gl_Position = u_matrix * a_position;
    v_texcoord = (u_textureMatrix * vec4(a_texcoord, 0, 1)).xy;
+
+  //  ts_frag_pos = vec3(model_mtx * a_position);
+  //  vec3 vert_norm = cross(vert_bitang, vert_tang);
+
+  //  vec3 light_pos = vec3(1, 2, 5);
+  //  ts_light_pos =  light_pos;
+   // Our camera is always at the origin
+  //  ts_view_pos = vec3(0, 0, 0);
+   ts_frag_pos = (u_matrix * a_position).xyz;
 }`;
 
   const pieceFsSource = `
 precision mediump float;
  
 varying vec2 v_texcoord;
+varying vec3 ts_frag_pos;
  
+uniform vec3 ts_light_pos;
+uniform vec3 ts_view_pos;
 uniform sampler2D u_texture;
+uniform sampler2D u_bumpmap;
  
 void main() {
-  vec4 texColor = texture2D(u_texture, v_texcoord);
+  vec3 light_dir = normalize(ts_light_pos - ts_frag_pos);
+  vec3 view_dir = normalize(ts_view_pos - ts_frag_pos);
+  vec3 halfway_dir = normalize(light_dir + view_dir);
 
-  gl_FragColor = texColor * texColor.a;
+  // gl_FragColor = texture2D(u_bumpmap, v_texcoord);
+  // return; 
+
+
+
+  // Only perturb the texture coordinates if a parallax technique is selected
+  vec2 uv = v_texcoord;
+
+  vec4 albedo = texture2D(u_texture, uv);
+  // vec4 ambient = 0.9 * albedo;
+  vec4 ambient = vec4((0.5 * albedo).rgb, 1);
+
+  vec3 norm = normalize(texture2D(u_bumpmap, uv).rgb * 2.0 - 1.0);
+  float diffuse = max(dot(light_dir, norm), 0.0);
+
+  vec4 texColor = texture2D(u_texture, v_texcoord);
+  // gl_FragColor = texColor * albedo  + ambient;
+  gl_FragColor = vec4((ambient + diffuse) * texColor) * texColor.a;
+
+
+
+  // vec4 texColor = texture2D(u_texture, v_texcoord) * texture2D(u_bumpmap, v_texcoord);
+  // gl_FragColor = texColor;
 }`;
 
   const program = initShaderProgram(gl, pieceVsSource, pieceFsSource);

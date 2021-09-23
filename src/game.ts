@@ -36,7 +36,8 @@ export class PuzzleGame {
     this.PUZZLE_HEIGHT = puzzleHeight;
     this.imageUrl = imageUrl;
 
-    const canvas = document.querySelector<HTMLCanvasElement>("#game");
+    // const canvas = document.querySelector<HTMLCanvasElement>("#game");
+    const canvas = document.createElement("canvas");
 
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -91,11 +92,13 @@ export class PuzzleGame {
         const pieceTexture = pieceTextures.find(
           (pt) => pt.j === j && pt.k === k
         );
-        const textureInfo = getTextureInfo(this.gl, pieceTexture);
+        const textureInfo = getTextureInfo(this.gl, pieceTexture.image);
+        const bumpMap = getTextureInfo(this.gl, pieceTexture.bumpMap);
         this.pieces.push(
           new Piece({
             gl: this.gl,
             textureInfo,
+            bumpMap,
             program,
             puzzleWidth: this.PUZZLE_WIDTH,
             puzzleHeight: this.PUZZLE_HEIGHT,
@@ -113,7 +116,7 @@ export class PuzzleGame {
       piece.locked = true;
     }
 
-    this.scramblePieces(true);
+    // this.scramblePieces(false);
 
     window.addEventListener("mousedown", this.onMouseDown.bind(this));
     window.addEventListener("mouseup", this.onMouseUp.bind(this));
@@ -141,7 +144,7 @@ export class PuzzleGame {
 
     this.background.render(this.gl, this.camera.projection);
 
-    this.pieces.forEach((piece) => piece.draw(this.gl, this.camera.projection));
+    this.pieces.forEach((piece) => piece.draw(this.gl, this.camera));
   }
 
   start() {
