@@ -1,8 +1,8 @@
-import { chunk, flatten, mean, min, reverse } from "lodash";
+import { chunk, flatten, mean, min, reverse, sum } from "lodash";
 import { drawPoints } from "./curve";
 import { loadImage, random } from "./util";
 import bumpMapUrl from "../puzzles/10641-normal.jpg";
-import { vec2 } from "gl-matrix";
+import { vec2, vec3 } from "gl-matrix";
 
 export type PieceTexture = {
   j: number;
@@ -30,14 +30,36 @@ function rescale(
   return ((n - nMin) / (nMax - nMin)) * (rMax - rMin) + rMin;
 }
 
-function meanVec(vectors: vec2[]) {
-  const x = mean(vectors.map((v) => v[0]));
-  const y = mean(vectors.map((v) => v[1]));
+function rotVec(vector: vec3, axis: vec3, rad: number) {
+  const result = vec3.create();
 
-  return vec2.fromValues(x, y);
+  const a = vec3.create();
+  const b = vec3.create();
+  const c = vec3.create();
+
+  vec3.scale(a, vector, Math.cos(rad));
+
+  vec3.cross(b, axis, vector);
+  vec3.scale(b, b, Math.sin(rad));
+
+  const c1 = vec3.dot(axis, vector) * (1 - Math.cos(rad));
+  vec3.scale(c, axis, c1);
+
+  vec3.add(result, a, b);
+  vec3.add(result, result, c);
+
+  return result;
 }
 
-const INITIAL_Z = 200;
+function meanVec(vectors: (vec2 | vec3)[]) {
+  const x = mean(vectors.map((v) => v[0]));
+  const y = mean(vectors.map((v) => v[1]));
+  const z = mean(vectors.map((v) => v[2]));
+
+  return vec3.fromValues(x, y, z);
+}
+
+const INITIAL_Z = -0.5;
 
 function drawBorder(
   iterations: number,
@@ -46,13 +68,10 @@ function drawBorder(
   height: number,
   cb: (iteration: number, i: number) => [number, number, number, number]
 ) {
-  let vectors: (vec2 | null)[] = Array.from({ length: data.length / 4 }).map(
+  let vectors: (vec3 | null)[] = Array.from({ length: data.length / 4 }).map(
     () => null
   );
-  // let angles: (number | null)[] = Array.from({ length: data.length / 4 }).map(
-  //   () => null
-  // );
-  let borderPixels: number[] = [];
+  let borderPixels = Array.from({ length: data.length / 4 }).map(() => false);
 
   for (let i = 0; i < data.length; i += 4) {
     if (data[i + 3] < 255) continue;
@@ -81,20 +100,29 @@ function drawBorder(
 
     if (isNextToAlpha) {
       const angleRad = angle * (Math.PI / 180);
-      const x = Math.cos(angleRad);
-      const y = Math.sin(angleRad);
-      vectors[i / 4] = vec2.fromValues(x, y);
+      const vector = vec3.fromValues(
+        Math.cos(angleRad),
+        Math.sin(angleRad),
+        INITIAL_Z
+      );
+      vec3.normalize(vector, vector);
+      vectors[i / 4] = vector;
+
+      const x = vector[0];
+      const y = vector[1];
+      // const z = vector[2];
+      const z = INITIAL_Z;
 
       data[i] = rescale(x, -1, 1, 0, 255);
       data[i + 1] = rescale(y, -1, 1, 0, 255);
-      data[i + 2] = INITIAL_Z;
+      data[i + 2] = rescale(z, 0, -1, 128, 255);
 
-      borderPixels.push(i);
+      borderPixels[i / 4] = true;
     }
   }
 
+  // Smooth initial normals based on surrounding normals
   for (let step = 0; step < 5; step++) {
-    // Smooth initial gradients
     let newVectors = [...vectors];
 
     for (let i = 0; i <= vectors.length; i++) {
@@ -114,29 +142,33 @@ function drawBorder(
 
       if (adjacentVectors.length > 0) {
         const newVector = meanVec([angle, ...adjacentVectors]);
+
+        vec3.normalize(newVector, newVector);
         newVectors[i] = newVector;
         const x = newVector[0];
         const y = newVector[1];
+        const z = INITIAL_Z;
 
         data[i * 4] = rescale(x, -1, 1, 0, 255);
         data[i * 4 + 1] = rescale(y, -1, 1, 0, 255);
-        data[i * 4 + 2] = INITIAL_Z;
+        data[i * 4 + 2] = rescale(z, 0, -1, 128, 255);
       }
     }
 
     vectors = [...newVectors];
   }
 
-  for (let n = 0; n <= iterations - 1; n++) {
-    let newBorderPixels = [];
-    let newVectors = [...vectors];
-    for (let i = 0; i < data.length; i += 4) {
-      if (data[i + 3] === 255) continue;
+  let rotateStep = (Math.PI / 2 / iterations) * (-1 - INITIAL_Z);
 
-      const right = borderPixels.includes(i + 4);
-      const above = borderPixels.includes(i - width * 4);
-      const below = borderPixels.includes(i + width * 4);
-      const left = borderPixels.includes(i - 4);
+  for (let n = 0; n <= iterations - 1; n++) {
+    let newBorderPixels = [...borderPixels];
+    let newVectors = [...vectors];
+
+    for (let i = 0; i < data.length; i += 4) {
+      const right = borderPixels[i / 4 + 1];
+      const above = borderPixels[i / 4 - width];
+      const below = borderPixels[i / 4 + width];
+      const left = borderPixels[i / 4 - 1];
 
       const adjacentVectors = [
         vectors[i / 4 + 1],
@@ -152,20 +184,35 @@ function drawBorder(
       const isNextToBorder = left || above || below || right;
 
       if (
-        !borderPixels.includes(i) &&
+        !borderPixels[i / 4] &&
         isNextToBorder &&
+        data[i + 3] === 255 &&
         adjacentVectors.length > 0
       ) {
-        const vector = meanVec(adjacentVectors);
-        newVectors[i / 4] = vector;
-        const x = vector[0];
-        const y = vector[1];
+        let newVector = meanVec(adjacentVectors);
+        newVector[2] = INITIAL_Z;
+
+        const tangent = vec3.create();
+        vec3.copy(tangent, newVector);
+        tangent[2] = 0;
+        vec3.normalize(tangent, tangent);
+        vec3.rotateZ(tangent, tangent, vec3.fromValues(0, 0, 0), Math.PI / 2);
+        vec3.normalize(tangent, tangent);
+
+        // Rotate vector about tangent axis face it towards the viewer
+        newVector = rotVec(newVector, tangent, -rotateStep * n);
+
+        vec3.normalize(newVector, newVector);
+        newVectors[i / 4] = newVector;
+        const x = newVector[0];
+        const y = newVector[1];
+        const z = newVector[2];
 
         data[i] = rescale(x, -1, 1, 0, 255);
         data[i + 1] = rescale(y, -1, 1, 0, 255);
-        data[i + 2] = rescale(n, 0, iterations - 1, INITIAL_Z, 255);
+        data[i + 2] = rescale(z, 0, -1, 128, 255);
 
-        newBorderPixels.push(i);
+        newBorderPixels[i / 4] = true;
       }
     }
 
@@ -173,7 +220,52 @@ function drawBorder(
 
     vectors = [...newVectors];
 
-    borderPixels.push(...newBorderPixels);
+    borderPixels = [...newBorderPixels];
+  }
+
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] === 255 && vectors[i / 4] === null) {
+      vectors[i / 4] = vec3.fromValues(0, 0, -1);
+      data[i] = 128;
+      data[i + 1] = 128;
+      data[i + 2] = 255;
+    }
+  }
+
+  // Smooth normals
+  for (let step = 0; step < 10; step++) {
+    let newVectors = [...vectors];
+
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i + 3] < 255) continue;
+
+      const adjacentVectors = [
+        vectors[i / 4 + 1],
+        vectors[i / 4 - 1],
+        vectors[i / 4 - width],
+        vectors[i / 4 + width],
+        vectors[i / 4 - width - 1], // top-left
+        vectors[i / 4 - width + 1], // top-right
+        vectors[i / 4 + width - 1], // bottom-left
+        vectors[i / 4 + width + 1], // bottom-right
+      ].filter((a) => a !== undefined && a !== null);
+
+      if (adjacentVectors.length > 0) {
+        const newVector = meanVec(adjacentVectors);
+
+        vec3.normalize(newVector, newVector);
+        newVectors[i / 4] = newVector;
+        const x = newVector[0];
+        const y = newVector[1];
+        const z = newVector[2];
+
+        data[i] = rescale(x, -1, 1, 0, 255);
+        data[i + 1] = rescale(y, -1, 1, 0, 255);
+        data[i + 2] = rescale(z, 0, -1, 128, 255);
+      }
+    }
+
+    vectors = [...newVectors];
   }
 }
 
@@ -206,8 +298,12 @@ export async function genPuzzlePieceTextures({
     imagePadding: number;
   }[] = Array.from({ length: puzzleHeight * puzzleWidth });
 
+  const diffuseTimes = [];
+  const normalTimes = [];
+
   for (let j = 0; j < puzzleWidth; j++) {
     for (let k = 0; k < puzzleHeight; k++) {
+      const p1 = performance.now();
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
       canvas.width = canvasWidth;
@@ -279,6 +375,9 @@ export async function genPuzzlePieceTextures({
       pieceImage.src = url;
       pieceImages.push(pieceImage);
 
+      const p2 = performance.now();
+      diffuseTimes.push(p2 - p1);
+
       const bumpCanvas = document.createElement("canvas");
       const bctx = bumpCanvas.getContext("2d");
       bumpCanvas.width = canvasWidth;
@@ -298,8 +397,9 @@ export async function genPuzzlePieceTextures({
         if (data[i + 3] < 255) data[i + 3] = 0;
       }
 
+      // if (i === 1) {
       drawBorder(
-        Math.ceil(pieceWidth * 0.02),
+        Math.ceil(pieceWidth * 0.05),
         data,
         canvasWidth,
         canvasHeight,
@@ -307,6 +407,7 @@ export async function genPuzzlePieceTextures({
           return [12.75 * iteration, 12.75 * iteration, 192, 255];
         }
       );
+      // }
 
       bctx.putImageData(imageData, 0, 0);
 
@@ -316,7 +417,14 @@ export async function genPuzzlePieceTextures({
       bumpMap.height = bumpCanvas.height;
       bumpMap.src = bumpUrl;
 
-      if (i === 28) document.body.append(bumpMap);
+      if (i === 1) {
+        bumpMap.width = bumpMap.width * 2;
+        bumpMap.height = bumpMap.height * 2;
+        bumpMap.setAttribute("style", "position: fixed; top: 0; right: 0;");
+        document.body.append(bumpMap);
+      }
+
+      normalTimes.push(performance.now() - p2);
 
       pieces[i] = {
         pointsBottom,
@@ -329,6 +437,17 @@ export async function genPuzzlePieceTextures({
       };
     }
   }
+
+  console.log(
+    `Took ${sum(diffuseTimes).toFixed(0)}ms to generate textures (${mean(
+      diffuseTimes
+    ).toFixed(1)}ms/image)`
+  );
+  console.log(
+    `Took ${sum(normalTimes).toFixed(0)}ms to generate normal maps (${mean(
+      normalTimes
+    ).toFixed(1)}ms/image)`
+  );
 
   return pieces.map((piece) => ({
     j: piece.j,

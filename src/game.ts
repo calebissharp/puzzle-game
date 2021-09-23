@@ -36,8 +36,7 @@ export class PuzzleGame {
     this.PUZZLE_HEIGHT = puzzleHeight;
     this.imageUrl = imageUrl;
 
-    // const canvas = document.querySelector<HTMLCanvasElement>("#game");
-    const canvas = document.createElement("canvas");
+    const canvas = document.querySelector<HTMLCanvasElement>("#game");
 
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -116,7 +115,7 @@ export class PuzzleGame {
       piece.locked = true;
     }
 
-    // this.scramblePieces(false);
+    this.scramblePieces(false);
 
     window.addEventListener("mousedown", this.onMouseDown.bind(this));
     window.addEventListener("mouseup", this.onMouseUp.bind(this));
