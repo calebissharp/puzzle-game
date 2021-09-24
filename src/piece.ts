@@ -180,7 +180,7 @@ export class Piece {
 
     const cameraPos = vec3.fromValues(camera.x, camera.y, 5);
     vec3.transformMat4(cameraPos, cameraPos, camera.projection);
-    const lightPos = vec3.fromValues(camera.x, camera.y, -0.1);
+    const lightPos = vec3.fromValues(camera.x, camera.y, -0.4);
     vec3.transformMat4(lightPos, lightPos, camera.projection);
 
     gl.uniform3fv(this.viewPosLocation, cameraPos);
@@ -436,29 +436,25 @@ void main() {
   vec3 view_dir = normalize(ts_view_pos - ts_frag_pos);
   vec3 halfway_dir = normalize(light_dir + view_dir);
 
-  // gl_FragColor = texture2D(u_bumpmap, v_texcoord);
-  // return; 
 
-
-
-  // Only perturb the texture coordinates if a parallax technique is selected
   vec2 uv = v_texcoord;
 
   vec4 albedo = texture2D(u_texture, uv);
-  // vec4 ambient = 0.9 * albedo;
-  vec4 ambient = vec4((0.5 * albedo).rgb, 1);
+  vec3 ambient = (0.3 * albedo).rgb;
 
   vec3 norm = normalize(texture2D(u_bumpmap, uv).rgb * 2.0 - 1.0);
   float diffuse = max(dot(light_dir, norm), 0.0);
 
+  float specularStrength = 0.5;
+  float shininess = 16.0;
+
+  vec3 reflect_dir = reflect(-light_dir, norm);
+  float spec = pow(max(dot(norm, halfway_dir), 0.0), shininess);
+  vec3 specular = vec3(1.0,1.0,1.0) * spec;
+
   vec4 texColor = texture2D(u_texture, v_texcoord);
-  // gl_FragColor = texColor * albedo  + ambient;
-  gl_FragColor = vec4((ambient + diffuse) * texColor) * texColor.a;
 
-
-
-  // vec4 texColor = texture2D(u_texture, v_texcoord) * texture2D(u_bumpmap, v_texcoord);
-  // gl_FragColor = texColor;
+  gl_FragColor = vec4((ambient + specular + diffuse) * texColor.rgb, 1.0) * texColor.a;
 }`;
 
   const program = initShaderProgram(gl, pieceVsSource, pieceFsSource);

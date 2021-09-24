@@ -115,7 +115,7 @@ export class PuzzleGame {
       piece.locked = true;
     }
 
-    this.scramblePieces(false);
+    this.scramblePieces(true);
 
     window.addEventListener("mousedown", this.onMouseDown.bind(this));
     window.addEventListener("mouseup", this.onMouseUp.bind(this));

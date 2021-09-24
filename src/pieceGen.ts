@@ -65,8 +65,7 @@ function drawBorder(
   iterations: number,
   data: Uint8ClampedArray,
   width: number,
-  height: number,
-  cb: (iteration: number, i: number) => [number, number, number, number]
+  height: number
 ) {
   let vectors: (vec3 | null)[] = Array.from({ length: data.length / 4 }).map(
     () => null
@@ -397,17 +396,7 @@ export async function genPuzzlePieceTextures({
         if (data[i + 3] < 255) data[i + 3] = 0;
       }
 
-      // if (i === 1) {
-      drawBorder(
-        Math.ceil(pieceWidth * 0.05),
-        data,
-        canvasWidth,
-        canvasHeight,
-        (iteration, i) => {
-          return [12.75 * iteration, 12.75 * iteration, 192, 255];
-        }
-      );
-      // }
+      drawBorder(Math.ceil(pieceWidth * 0.05), data, canvasWidth, canvasHeight);
 
       bctx.putImageData(imageData, 0, 0);
 
@@ -416,13 +405,6 @@ export async function genPuzzlePieceTextures({
       bumpMap.width = bumpCanvas.width;
       bumpMap.height = bumpCanvas.height;
       bumpMap.src = bumpUrl;
-
-      if (i === 1) {
-        bumpMap.width = bumpMap.width * 2;
-        bumpMap.height = bumpMap.height * 2;
-        bumpMap.setAttribute("style", "position: fixed; top: 0; right: 0;");
-        document.body.append(bumpMap);
-      }
 
       normalTimes.push(performance.now() - p2);
 
