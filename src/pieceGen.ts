@@ -61,7 +61,7 @@ function meanVec(vectors: (vec2 | vec3)[]) {
 
 const INITIAL_Z = -0.5;
 
-function drawBorder(
+export function drawNormal(
   iterations: number,
   data: Uint8ClampedArray,
   width: number,
@@ -368,7 +368,7 @@ export async function genPuzzlePieceTextures({
       // ctx.stroke();
 
       const url = canvas.toDataURL("image/png");
-      const pieceImage = new Image();
+      const pieceImage = document.createElement("img");
       pieceImage.width = canvasWidth;
       pieceImage.height = canvasHeight;
       pieceImage.src = url;
@@ -393,7 +393,7 @@ export async function genPuzzlePieceTextures({
       const data = imageData.data;
 
       for (let i = 0; i < data.length; i += 4) {
-        if (data[i + 3] < 255) data[i + 3] = 0;
+          if (data[i + 3] > 0) data[i + 3] = 255;
       }
 
       drawBorder(Math.ceil(pieceWidth * 0.05), data, canvasWidth, canvasHeight);

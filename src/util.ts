@@ -30,7 +30,7 @@ export function imageToDataUrl(image: ImageBitmap) {
 
 export function loadImage(src: string) {
   return new Promise<HTMLImageElement>((resolve) => {
-    const img = new Image();
+    const img = document.createElement("img");
     img.crossOrigin = "anonymous";
     img.addEventListener("load", () => {
       resolve(img);
@@ -83,7 +83,7 @@ export function loadImageAndCreateTextureInfo(
       height: 1,
       texture: tex,
     };
-    const img = new Image();
+    const img = document.createElement("img");
     img.crossOrigin = "anonymous";
     img.addEventListener("load", function () {
       textureInfo.width = img.width;
@@ -100,4 +100,13 @@ export function loadImageAndCreateTextureInfo(
 
 export function clamp(min: number, max: number, n: number) {
   return Math.max(Math.min(max, n), min);
+}
+
+export function mulberry32(a: number) {
+  return function () {
+    var t = (a += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
