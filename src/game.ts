@@ -229,8 +229,11 @@ export class PuzzleGame {
       this.pieces.reverse();
 
       if (clickedPiece && !clickedPiece.locked) {
-        this.pieces.splice(this.pieces.indexOf(clickedPiece), 1);
-        this.pieces.push(clickedPiece);
+        for (const piece of clickedPiece.attachedPieces) {
+          const index = this.pieces.indexOf(piece);
+          this.pieces.splice(index, 1);
+          this.pieces.push(piece);
+        }
         this.activePiece = clickedPiece;
       }
     }
