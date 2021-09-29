@@ -453,20 +453,30 @@ function drawPiece(
   const smallVariationX = pieceWidth * 0.05;
   const smallVariationY = pieceHeight * 0.05;
 
+  const invertedX = Math.random() > 0.5;
+  const directionX = invertedX ? -1 : 1;
+
+  const invertedY = Math.random() > 0.5;
+  const directionY = invertedY ? -1 : 1;
+
   const pointsBottom = [
     leftPoints ? leftPoints[leftPoints.length - 2] - pieceWidth : leftSide,
     leftPoints ? leftPoints[leftPoints.length - 1] : bottomSide,
 
     cx + pieceWidth * -0.2 + offsetX,
-    cy + pieceHeight * 0.4 + random(-smallVariationY, smallVariationY),
+    cy +
+      pieceHeight * (invertedY ? 0.6 : 0.4) +
+      random(-smallVariationY, smallVariationY),
 
     cx + pieceWidth * -0.15 + offsetX,
-    bottomSide * 1 + MAX_JOINER_HEIGHT / 2,
+    bottomSide * (invertedY ? 1 : 1) + (MAX_JOINER_HEIGHT / 2) * directionY,
     cx + pieceWidth * 0.15 + offsetX,
-    bottomSide * 1 + MAX_JOINER_HEIGHT / 2,
+    bottomSide * (invertedY ? 1 : 1) + (MAX_JOINER_HEIGHT / 2) * directionY,
 
     cx + pieceWidth * 0.2 + offsetX,
-    cy + pieceHeight * 0.4 + random(-smallVariationY, smallVariationY),
+    cy +
+      pieceHeight * (invertedY ? 0.6 : 0.4) +
+      random(-smallVariationY, smallVariationY),
 
     drawRight && drawBottom
       ? leftSide + pieceWidth + random(-smallVariationX, smallVariationX)
@@ -482,15 +492,23 @@ function drawPiece(
       : rightSide + random(-smallVariationX, smallVariationX),
     topPoints ? topPoints[topPoints.length - 1] - pieceHeight : topSide,
 
-    cx + pieceWidth * 0.45 + random(-smallVariationX, smallVariationX),
+    cx +
+      pieceWidth * (invertedX ? 0.55 : 0.45) +
+      random(-smallVariationX, smallVariationX),
     cy + pieceHeight * -0.15 + offsetY,
 
-    cx + pieceWidth * 0.55 + MAX_JOINER_HEIGHT / 2,
+    cx +
+      pieceWidth * (invertedX ? 0.45 : 0.55) +
+      (MAX_JOINER_HEIGHT / 2) * directionX,
     cy + pieceHeight * -0.15 + offsetY,
-    cx + pieceWidth * 0.55 + MAX_JOINER_HEIGHT / 2,
+    cx +
+      pieceWidth * (invertedX ? 0.45 : 0.55) +
+      (MAX_JOINER_HEIGHT / 2) * directionX,
     cy + pieceHeight * 0.15 + offsetY,
 
-    cx + pieceWidth * 0.45 + random(-smallVariationX, smallVariationX),
+    cx +
+      pieceWidth * (invertedX ? 0.55 : 0.45) +
+      random(-smallVariationX, smallVariationX),
     cy + pieceHeight * 0.15 + offsetY,
 
     drawBottom ? pointsBottom[pointsBottom.length - 2] : rightSide,
@@ -498,7 +516,6 @@ function drawPiece(
   ];
 
   const path = new Path2D();
-  // ctx.beginPath();
 
   const tension = 1;
 
