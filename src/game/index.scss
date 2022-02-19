@@ -9,6 +9,14 @@ body {
   background-color: black;
 }
 
+#root {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+}
+
 .pieces-list {
   display: grid;
   grid-template-columns: repeat(15, 1fr);

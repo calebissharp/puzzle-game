@@ -330,6 +330,11 @@ export class Piece {
     return this.position.y + this.sliceHeight / 2;
   }
 
+  /**
+   * Move this piece and all attached pieces by a delta
+   * @param deltaX movement in X axis
+   * @param deltaY movement in Y axis
+   */
   moveAllPos(deltaX: number, deltaY: number) {
     for (const attachedPiece of this.attachedPieces) {
       attachedPiece.position.x += deltaX;
@@ -337,6 +342,10 @@ export class Piece {
     }
   }
 
+  /**
+   * Set the position of this piece and all connected pieces, with `x` and `y`
+   * specifying the position of this piece
+   */
   setAllPos(x: number, y: number) {
     const deltaX = x - this.position.x;
     const deltaY = y - this.position.y;

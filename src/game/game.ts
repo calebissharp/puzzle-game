@@ -6,8 +6,9 @@ import { getPieceShaderProgram, getTextureInfo, Piece } from "./piece";
 import { genPuzzlePieceTextures } from "./pieceGen";
 import { Rectangle } from "./rectangle";
 import { clamp, loadImage } from "./util";
+import { EventEmitter } from "events";
 
-export class PuzzleGame {
+export class PuzzleGame extends EventEmitter {
   gl: WebGLRenderingContext;
 
   PUZZLE_WIDTH: number;
@@ -25,6 +26,9 @@ export class PuzzleGame {
   dragging = false;
 
   pieces: Piece[] = [];
+  /**
+   * The piece currently being moved
+   */
   activePiece?: Piece;
 
   background: Rectangle;
@@ -32,6 +36,8 @@ export class PuzzleGame {
   stats: Stats;
 
   constructor(imageUrl: string, puzzleWidth: number, puzzleHeight: number) {
+    super();
+
     this.PUZZLE_WIDTH = puzzleWidth;
     this.PUZZLE_HEIGHT = puzzleHeight;
     this.imageUrl = imageUrl;
@@ -61,6 +67,7 @@ export class PuzzleGame {
   }
 
   async load() {
+    this.emit("loading", true);
     const program = getPieceShaderProgram(this.gl);
 
     this.image = await loadImage(this.imageUrl);
@@ -112,15 +119,17 @@ export class PuzzleGame {
     }
 
     for (const piece of this.pieces) {
-      piece.locked = true;
+      // piece.locked = true;
     }
 
     this.scramblePieces(true);
 
-    window.addEventListener("mousedown", this.onMouseDown.bind(this));
-    window.addEventListener("mouseup", this.onMouseUp.bind(this));
-    window.addEventListener("mousemove", this.onMouseMove.bind(this));
-    window.addEventListener("wheel", this.onWheel.bind(this));
+    this.gl.canvas.addEventListener("mousedown", this.onMouseDown.bind(this));
+    this.gl.canvas.addEventListener("mouseup", this.onMouseUp.bind(this));
+    this.gl.canvas.addEventListener("mousemove", this.onMouseMove.bind(this));
+    this.gl.canvas.addEventListener("wheel", this.onWheel.bind(this));
+
+    this.emit("loading", false);
   }
 
   update(deltaTime: number, elapsed: number) {
@@ -138,7 +147,7 @@ export class PuzzleGame {
     // Tell WebGL how to convert from clip space to pixels
     this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
 
-    this.gl.clearColor(20 / 255, 20 / 255, 20 / 255, 1);
+    this.gl.clearColor(50 / 255, 50 / 255, 50 / 255, 1);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 
     this.background.render(this.gl, this.camera.projection);
@@ -241,16 +250,19 @@ export class PuzzleGame {
 
   onMouseMove(e: MouseEvent) {
     if (this.dragging) {
+      const movementX = e.movementX / window.devicePixelRatio;
+      const movementY = e.movementY / window.devicePixelRatio;
+
       if (this.activePiece) {
         // this.activePiece.position.x += e.movementX * this.camera.zoom;
         // this.activePiece.position.y += e.movementY * this.camera.zoom;
         this.activePiece.moveAllPos(
-          e.movementX * this.camera.zoom,
-          e.movementY * this.camera.zoom
+          movementX * this.camera.zoom,
+          movementY * this.camera.zoom
         );
       } else {
-        this.camera.x += -e.movementX * this.camera.zoom;
-        this.camera.y += -e.movementY * this.camera.zoom;
+        this.camera.x += -movementX * this.camera.zoom;
+        this.camera.y += -movementY * this.camera.zoom;
 
         this.camera.updateProjection(
           this.gl.canvas.width,
@@ -270,16 +282,17 @@ export class PuzzleGame {
     for (const [i, piece] of this.pieces.entries()) {
       const row = Math.floor(positions[i] / this.PUZZLE_WIDTH);
 
+      const padding = 15;
+      const width = piece.sliceWidth + padding;
+      const height = piece.sliceHeight + padding;
+
       if (row > Math.ceil(this.PUZZLE_HEIGHT / 2)) {
-        piece.position.y =
-          -(row - Math.ceil(this.PUZZLE_HEIGHT / 2)) * piece.sliceHeight;
+        piece.position.y = -(row - Math.ceil(this.PUZZLE_HEIGHT / 2)) * height;
       } else {
-        piece.position.y = this.image.height + row * piece.sliceHeight;
+        piece.position.y = this.image.height + row * height;
       }
 
-      piece.position.x =
-        positions[i] * piece.sliceWidth -
-        piece.sliceWidth * this.PUZZLE_WIDTH * row;
+      piece.position.x = positions[i] * width - width * this.PUZZLE_WIDTH * row;
 
       piece.locked = false;
     }

@@ -96,6 +96,10 @@ export function drawNormal(
     else if (right) angle = 0;
     else if (above) angle = 90;
 
+    if (angle === null) {
+      // throw new Error("Could not calculate angle");
+    }
+
     if (isNextToAlpha) {
       const angleRad = angle * (Math.PI / 180);
       const vector = vec3.fromValues(
@@ -281,6 +285,9 @@ export async function genPuzzlePieceTextures({
       const p1 = performance.now();
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        throw new Error("Could not initialize canvas");
+      }
       canvas.width = canvasWidth;
       canvas.height = canvasHeight;
 
@@ -355,6 +362,9 @@ export async function genPuzzlePieceTextures({
 
       const bumpCanvas = document.createElement("canvas");
       const bctx = bumpCanvas.getContext("2d");
+      if (!bctx) {
+        throw new Error("Could not initialize canvas");
+      }
       bumpCanvas.width = canvasWidth;
       bumpCanvas.height = canvasHeight;
 
