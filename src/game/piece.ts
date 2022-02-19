@@ -95,6 +95,7 @@ export class Piece {
 
     // Create a buffer.
     const positionBuffer = gl.createBuffer();
+    if (!positionBuffer) throw new Error("Could not create position buffer");
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
     this.positionBuffer = positionBuffer;
 
@@ -108,6 +109,7 @@ export class Piece {
 
     // Create a buffer for texture coords
     const texcoordBuffer = gl.createBuffer();
+    if (!texcoordBuffer) throw new Error("Could not create texcoord buffer");
     gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
     this.texCoordBuffer = texcoordBuffer;
 
@@ -125,15 +127,36 @@ export class Piece {
     this.fragPosLocation = gl.getAttribLocation(this.program, "ts_frag_pos");
 
     // lookup uniforms
-    this.matrixLocation = gl.getUniformLocation(this.program, "u_matrix");
-    this.textureMatrixLocation = gl.getUniformLocation(
+    const matrixLocation = gl.getUniformLocation(this.program, "u_matrix");
+    if (!matrixLocation) throw new Error("Could not get uniform location");
+    this.matrixLocation = matrixLocation;
+
+    const textureMatrixLocation = gl.getUniformLocation(
       program,
       "u_textureMatrix"
     );
-    this.textureLocation = gl.getUniformLocation(this.program, "u_texture");
-    this.bumpMapLocation = gl.getUniformLocation(this.program, "u_bumpmap");
-    this.viewPosLocation = gl.getUniformLocation(this.program, "ts_view_pos");
-    this.lightPosLocation = gl.getUniformLocation(this.program, "ts_light_pos");
+    if (!textureMatrixLocation)
+      throw new Error("Could not get uniform location");
+    this.textureMatrixLocation = textureMatrixLocation;
+
+    const textureLocation = gl.getUniformLocation(this.program, "u_texture");
+    if (!textureLocation) throw new Error("Could not get uniform location");
+    this.textureLocation = textureLocation;
+
+    const bumpMapLocation = gl.getUniformLocation(this.program, "u_bumpmap");
+    if (!bumpMapLocation) throw new Error("Could not get uniform location");
+    this.bumpMapLocation = bumpMapLocation;
+
+    const viewPosLocation = gl.getUniformLocation(this.program, "ts_view_pos");
+    if (!viewPosLocation) throw new Error("Could not get uniform location");
+    this.viewPosLocation = viewPosLocation;
+
+    const lightPosLocation = gl.getUniformLocation(
+      this.program,
+      "ts_light_pos"
+    );
+    if (!lightPosLocation) throw new Error("Could not get uniform location");
+    this.lightPosLocation = lightPosLocation;
   }
 
   draw(gl: WebGLRenderingContext, camera: Camera) {
@@ -368,6 +391,10 @@ export function getTextureInfo(
 ): TextureInfo {
   const tex = gl.createTexture();
 
+  if (!tex) {
+    throw new Error("Could not create texture");
+  }
+
   gl.bindTexture(gl.TEXTURE_2D, tex);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 
@@ -467,6 +494,10 @@ void main() {
 }`;
 
   const program = initShaderProgram(gl, pieceVsSource, pieceFsSource);
+
+  if (!program) {
+    throw new Error("Failed to load shader program");
+  }
 
   return program;
 }

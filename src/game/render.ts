@@ -18,6 +18,9 @@ export function initShaderProgram(
   // Create the shader program
 
   const shaderProgram = gl.createProgram();
+  if (!shaderProgram) {
+    throw new Error("Could not create shader program");
+  }
   gl.attachShader(shaderProgram, vertexShader);
   gl.attachShader(shaderProgram, fragmentShader);
   gl.linkProgram(shaderProgram);
@@ -25,11 +28,10 @@ export function initShaderProgram(
   // If creating the shader program failed, alert
 
   if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-    alert(
+    throw new Error(
       "Unable to initialize the shader program: " +
         gl.getProgramInfoLog(shaderProgram)
     );
-    return null;
   }
 
   return shaderProgram;
@@ -39,8 +41,14 @@ export function initShaderProgram(
 // creates a shader of the given type, uploads the source and
 // compiles it.
 //
-function loadShader(gl: WebGLRenderingContext, type: number, source: string) {
+function loadShader(
+  gl: WebGLRenderingContext,
+  type: number,
+  source: string
+): WebGLShader {
   const shader = gl.createShader(type);
+
+  if (!shader) throw new Error("Could not create shader");
 
   // Send the source to the shader object
   gl.shaderSource(shader, source);
@@ -50,10 +58,10 @@ function loadShader(gl: WebGLRenderingContext, type: number, source: string) {
 
   // See if it compiled successfully
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    console.error(gl.getShaderInfoLog(shader));
+    const err = gl.getShaderInfoLog(shader);
 
     gl.deleteShader(shader);
-    return null;
+    throw new Error(`Could not compile shader: ${err}`);
   }
 
   return shader;

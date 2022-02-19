@@ -1,12 +1,17 @@
 export function imageToBlob(image: HTMLImageElement) {
-  return new Promise<Blob>((resolve) => {
+  return new Promise<Blob>((resolve, reject) => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Could not get context");
     canvas.height = image.height;
     canvas.width = image.width;
     ctx.drawImage(image, 0, 0);
     ctx.canvas.toBlob((blob) => {
-      resolve(blob);
+      if (blob) {
+        resolve(blob);
+      } else {
+        reject(new Error("Could not create blob"));
+      }
     });
   });
 }
@@ -20,6 +25,7 @@ export function dot(ctx: CanvasRenderingContext2D, x: number, y: number) {
 export function imageToDataUrl(image: ImageBitmap) {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Could not get context");
   canvas.width = image.width + 500;
   canvas.height = image.height + 500;
   ctx.drawImage(image, 0, 0);
@@ -59,6 +65,7 @@ export function loadImageAndCreateTextureInfo(
 ): Promise<TextureInfo> {
   return new Promise((resolve) => {
     const tex = gl.createTexture();
+    if (!tex) throw new Error("Could not create texture");
     gl.bindTexture(gl.TEXTURE_2D, tex);
     // Fill the texture with a 1x1 blue pixel.
     gl.texImage2D(

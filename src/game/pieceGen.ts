@@ -81,7 +81,7 @@ export function drawNormal(
     const right = data[i + 7] < alphaThres;
 
     const isNextToAlpha = left || above || below || right;
-    let angle = null;
+    let angle = 0;
 
     if (left && above && below) angle = 180;
     else if (left && above && right) angle = 90;
@@ -97,7 +97,7 @@ export function drawNormal(
     else if (above) angle = 90;
 
     if (angle === null) {
-      // throw new Error("Could not calculate angle");
+      throw new Error("Could not calculate angle");
     }
 
     if (isNextToAlpha) {
@@ -140,7 +140,7 @@ export function drawNormal(
         vectors[i - width + 1], // top-right
         vectors[i + width - 1], // bottom-left
         vectors[i + width + 1], // bottom-right
-      ].filter((a) => a !== undefined && a !== null);
+      ].filter((a): a is vec3 => a !== undefined && a !== null);
 
       if (adjacentVectors.length > 0) {
         const newVector = meanVec([angle, ...adjacentVectors]);
@@ -181,7 +181,7 @@ export function drawNormal(
         oldVectors[i / 4 - width + 1], // top-right
         oldVectors[i / 4 + width - 1], // bottom-left
         oldVectors[i / 4 + width + 1], // bottom-right
-      ].filter((a) => a !== undefined && a !== null);
+      ].filter((a): a is vec3 => a !== undefined && a !== null);
 
       const isNextToBorder = left || above || below || right;
 
@@ -395,8 +395,8 @@ export async function genPuzzlePieceTextures({
       normalTimes.push(performance.now() - p2);
 
       pieces[i] = {
-        pointsBottom,
-        pointsRight,
+        pointsBottom: pointsBottom ?? undefined,
+        pointsRight: pointsRight ?? undefined,
         j,
         k,
         image: pieceImage,

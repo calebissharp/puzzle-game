@@ -1,6 +1,6 @@
 import { mat4, vec3 } from "gl-matrix";
 import { shuffle } from "lodash";
-import * as Stats from "stats.js";
+import Stats from "stats.js";
 import { Camera } from "./camera";
 import { getPieceShaderProgram, getTextureInfo, Piece } from "./piece";
 import { genPuzzlePieceTextures } from "./pieceGen";
@@ -17,11 +17,11 @@ export class PuzzleGame extends EventEmitter {
   camera: Camera;
 
   imageUrl: string;
-  image: HTMLImageElement;
+  image: HTMLImageElement | null = null;
 
-  startTime: number;
-  elapsedTime: number;
-  lastTime: number;
+  startTime: number = 0;
+  elapsedTime: number = 0;
+  lastTime: number = 0;
 
   dragging = false;
 
@@ -31,7 +31,7 @@ export class PuzzleGame extends EventEmitter {
    */
   activePiece?: Piece;
 
-  background: Rectangle;
+  background: Rectangle | null = null;
 
   stats: Stats;
 
@@ -44,11 +44,15 @@ export class PuzzleGame extends EventEmitter {
 
     const canvas = document.querySelector<HTMLCanvasElement>("#game");
 
+    if (!canvas) {
+      throw new Error("Couldn't find canvas");
+    }
+
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     const gl = canvas.getContext("webgl");
     if (!gl) {
-      console.log("Failed to load WebGL context");
+      throw new Error("Failed to load WebGL context");
 
       return;
     }
@@ -98,6 +102,10 @@ export class PuzzleGame extends EventEmitter {
         const pieceTexture = pieceTextures.find(
           (pt) => pt.j === j && pt.k === k
         );
+        if (!pieceTexture) {
+          throw new Error(`Could not find piece texture for piece ${j}, ${k}`);
+        }
+
         const textureInfo = getTextureInfo(this.gl, pieceTexture.image);
         const bumpMap = getTextureInfo(this.gl, pieceTexture.bumpMap);
         this.pieces.push(
@@ -150,7 +158,7 @@ export class PuzzleGame extends EventEmitter {
     this.gl.clearColor(50 / 255, 50 / 255, 50 / 255, 1);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 
-    this.background.render(this.gl, this.camera.projection);
+    this.background?.render(this.gl, this.camera.projection);
 
     this.pieces.forEach((piece) => piece.draw(this.gl, this.camera));
   }
@@ -273,6 +281,10 @@ export class PuzzleGame extends EventEmitter {
   }
 
   scramblePieces(shufflePos = true) {
+    if (!this.image) {
+      throw new Error("Cannot scramble pieces until image is loaded");
+    }
+
     const allPositions = Array.from({
       length: this.PUZZLE_WIDTH * this.PUZZLE_HEIGHT,
     }).map((_, i) => i);

@@ -1,0 +1,19 @@
+.game {
+  background-color: black;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+.gameContainer {
+  overflow: hidden;
+}
+
+.pieces-list {
+  display: grid;
+  grid-template-columns: repeat(15, 1fr);
+
+  > img {
+    width: auto;
+  }
+}

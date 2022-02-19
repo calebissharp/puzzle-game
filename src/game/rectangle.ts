@@ -6,12 +6,12 @@ export class Rectangle {
   width: number;
   height: number;
 
-  program: WebGLProgram;
+  program: WebGLProgram | null = null;
 
-  positionBuffer: WebGLBuffer;
+  positionBuffer: WebGLBuffer | null = null;
 
-  positionLocation: number;
-  matrixLocation: WebGLUniformLocation;
+  positionLocation: number | null = null;
+  matrixLocation: WebGLUniformLocation | null = null;
 
   constructor(
     gl: WebGLRenderingContext,
@@ -27,6 +27,10 @@ export class Rectangle {
 
   async load(gl: WebGLRenderingContext) {
     this.program = await initShaderProgram(gl, vsSource, fsSource);
+
+    if (!this.program) {
+      throw new Error("Coudl");
+    }
 
     const positionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
@@ -46,6 +50,11 @@ export class Rectangle {
 
   render(gl: WebGLRenderingContext, camera: mat4) {
     gl.useProgram(this.program);
+
+    if (this.positionBuffer === null)
+      throw new Error("Position buffer not initialized");
+    if (this.positionLocation === null)
+      throw new Error("Position location not initialized");
 
     // Setup the attributes to pull data from our buffers
     gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
