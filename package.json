@@ -11,6 +11,8 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
+    "@nextui-org/react": "^1.0.2-beta.4",
+    "@stitches/react": "^1.2.7",
     "@types/lodash": "^4.14.178",
     "@types/stats.js": "^0.17.0",
     "gl-matrix": "^3.4.3",

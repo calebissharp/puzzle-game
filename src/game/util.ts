@@ -117,3 +117,42 @@ export function mulberry32(a: number) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+
+/**
+ * Number of pieces we want = n
+ * image width = W
+ * image height = H
+ * piece width = w
+ * piece height = h
+ * number of horizontal pieces = x
+ * number of vertical pieces = y
+ *
+ * x * y = n
+ * xw = W
+ * yh = H
+ *
+ * x = W / w
+ * y = H / h
+ *
+ * (W / w) * (H / h) = n
+ *
+ * w = h
+ *
+ * WH / wh = n
+ * WH / s^2 = n
+ * s ^ 2 = WH / n
+ * s = sqrt(WH / n)
+ */
+
+export function getPuzzleDimensions(
+  imageWidth: number,
+  imageHeight: number,
+  targetPieces: number
+): [piecesX: number, piecesY: number] {
+  const s = Math.sqrt((imageWidth * imageHeight) / targetPieces);
+
+  const piecesX = Math.round(imageWidth / s);
+  const piecesY = Math.round(imageHeight / s);
+
+  return [piecesX, piecesY];
+}

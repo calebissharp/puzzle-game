@@ -1,6 +1,6 @@
 import { chunk, flatten, mean, min, reverse, sum } from "lodash";
 import { drawPoints } from "./curve";
-import { loadImage, random } from "./util";
+import { random } from "./util";
 import { vec2, vec3 } from "gl-matrix";
 
 export type PieceTexture = {
@@ -17,6 +17,7 @@ type CreatePuzzlePiecesOptions = {
   puzzleHeight: number;
   drawBounds?: boolean;
   pieceBorder?: boolean;
+  onProgress?: (n: number, total: number, dt: number) => void;
 };
 
 function rescale(
@@ -256,6 +257,7 @@ export async function genPuzzlePieceTextures({
   puzzleHeight,
   drawBounds = false,
   pieceBorder = false,
+  onProgress,
 }: CreatePuzzlePiecesOptions): Promise<PieceTexture[]> {
   const pieceWidth = Math.ceil(image.width / puzzleWidth);
   const pieceHeight = Math.ceil(image.height / puzzleHeight);
@@ -279,6 +281,9 @@ export async function genPuzzlePieceTextures({
 
   const diffuseTimes = [];
   const normalTimes = [];
+
+  const totalPieces = puzzleWidth * puzzleHeight;
+  let piecesComplete = 0;
 
   for (let j = 0; j < puzzleWidth; j++) {
     for (let k = 0; k < puzzleHeight; k++) {
@@ -403,6 +408,16 @@ export async function genPuzzlePieceTextures({
         bump: bumpMap,
         imagePadding: MAX_JOINER_HEIGHT,
       };
+
+      piecesComplete++;
+
+      const dt = performance.now() - p1;
+
+      if (onProgress) {
+        onProgress(piecesComplete, totalPieces, dt);
+
+        await new Promise((resolve) => setTimeout(resolve));
+      }
     }
   }
 

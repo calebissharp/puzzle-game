@@ -7,6 +7,7 @@
 
 .gameContainer {
   overflow: hidden;
+  position: relative;
 }
 
 .pieces-list {
@@ -15,5 +16,24 @@
 
   > img {
     width: auto;
+  }
+}
+
+.loader {
+  width: 100vw;
+  height: 100vh;
+  background-color: white;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+
+  span {
+    font-size: 26px;
   }
 }

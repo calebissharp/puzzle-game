@@ -23,7 +23,7 @@ export class PuzzleGame extends EventEmitter {
   elapsedTime: number = 0;
   lastTime: number = 0;
 
-  dragging = false;
+  private dragging = false;
 
   pieces: Piece[] = [];
   /**
@@ -35,14 +35,17 @@ export class PuzzleGame extends EventEmitter {
 
   stats: Stats;
 
-  constructor(imageUrl: string, puzzleWidth: number, puzzleHeight: number) {
+  constructor(
+    imageUrl: string,
+    puzzleWidth: number,
+    puzzleHeight: number,
+    canvas: HTMLCanvasElement
+  ) {
     super();
 
     this.PUZZLE_WIDTH = puzzleWidth;
     this.PUZZLE_HEIGHT = puzzleHeight;
     this.imageUrl = imageUrl;
-
-    const canvas = document.querySelector<HTMLCanvasElement>("#game");
 
     if (!canvas) {
       throw new Error("Couldn't find canvas");
@@ -71,10 +74,11 @@ export class PuzzleGame extends EventEmitter {
   }
 
   async load() {
-    this.emit("loading", true);
     const program = getPieceShaderProgram(this.gl);
 
     this.image = await loadImage(this.imageUrl);
+
+    this.emit("loadImage", this.image);
 
     this.camera.x = this.image.width / 2;
     this.camera.y = this.image.height / 2;
@@ -95,6 +99,9 @@ export class PuzzleGame extends EventEmitter {
       puzzleWidth: this.PUZZLE_WIDTH,
       puzzleHeight: this.PUZZLE_HEIGHT,
       pieceBorder: true,
+      onProgress: (n, total, dt) => {
+        this.emit("loadProgress", n, total, dt);
+      },
     });
 
     for (let j = 0; j < this.PUZZLE_WIDTH; j++) {
@@ -126,18 +133,12 @@ export class PuzzleGame extends EventEmitter {
       }
     }
 
-    for (const piece of this.pieces) {
-      // piece.locked = true;
-    }
-
     this.scramblePieces(true);
 
     this.gl.canvas.addEventListener("mousedown", this.onMouseDown.bind(this));
     this.gl.canvas.addEventListener("mouseup", this.onMouseUp.bind(this));
     this.gl.canvas.addEventListener("mousemove", this.onMouseMove.bind(this));
     this.gl.canvas.addEventListener("wheel", this.onWheel.bind(this));
-
-    this.emit("loading", false);
   }
 
   update(deltaTime: number, elapsed: number) {
