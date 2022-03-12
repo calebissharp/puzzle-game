@@ -51,6 +51,8 @@ const Game = ({ image, piecesX, piecesY, genNormals, showPerf }: GameProps) => {
     },
   });
 
+  const isLoaded = progress === 1;
+
   return (
     <div className={styles.gameContainer}>
       {progress < 1 && (
@@ -68,6 +70,8 @@ const Game = ({ image, piecesX, piecesY, genNormals, showPerf }: GameProps) => {
         </div>
       )}
       <canvas {...canvasProps} className={styles.game} />
+
+      {isLoaded && <GameControls />}
     </div>
   );
 };
