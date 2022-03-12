@@ -7,6 +7,7 @@ import { genPuzzlePieceTextures } from "./pieceGen";
 import { Rectangle } from "./rectangle";
 import { clamp, loadImage } from "./util";
 import { EventEmitter } from "events";
+import { store } from "../store";
 
 type LoadOptions = {
   genNormals?: boolean;
@@ -47,7 +48,7 @@ export class PuzzleGame extends EventEmitter {
 
   background: Rectangle | null = null;
 
-  stats: Stats | null = null;
+  stats: Stats;
 
   constructor({
     imageUrl,
@@ -84,10 +85,8 @@ export class PuzzleGame extends EventEmitter {
 
     this.camera = new Camera(this.gl.canvas.width, this.gl.canvas.height);
 
-    if (showPerf) {
-      this.stats = new Stats();
-      this.stats.showPanel(0);
-    }
+    this.stats = new Stats();
+    this.stats.showPanel(0);
 
     window.addEventListener("resize", this.onResize.bind(this));
   }
@@ -162,6 +161,10 @@ export class PuzzleGame extends EventEmitter {
   }
 
   update(deltaTime: number, elapsed: number) {
+    const state = store.getState();
+
+    this.stats.dom.hidden = !state.game.showPerfStats;
+
     this.pieces.forEach((piece) => piece.update(deltaTime, elapsed));
   }
 
@@ -185,8 +188,12 @@ export class PuzzleGame extends EventEmitter {
   }
 
   start() {
-    if (this.stats) {
-      document.body.append(this.stats.dom);
+    const state = store.getState();
+
+    document.body.append(this.stats.dom);
+
+    if (!state.game.showPerfStats) {
+      this.stats.dom.hidden = true;
     }
 
     requestAnimationFrame(this.render.bind(this));
@@ -201,12 +208,12 @@ export class PuzzleGame extends EventEmitter {
     this.lastTime = now;
     const elapsed = time - this.startTime;
 
-    if (this.stats) this.stats.begin();
+    this.stats.begin();
 
     this.update(deltaTime, elapsed);
     this.draw();
 
-    if (this.stats) this.stats.end();
+    this.stats.end();
 
     requestAnimationFrame(this.render.bind(this));
   }

@@ -16,7 +16,6 @@ type UsePuzzleParams = {
   piecesX: number;
   piecesY: number;
   genNormals?: boolean;
-  showPerf?: boolean;
 };
 
 export default function usePuzzle({

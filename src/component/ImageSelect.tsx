@@ -1,6 +1,8 @@
 import React, { useRef, useState } from "react";
 import { Button, styled } from "@nextui-org/react";
 import { getPuzzleDimensions, loadImage } from "../game/util";
+import { useAppDispatch, useAppSelector } from "../hook/store";
+import { setShowPerfStats } from "../game/slice";
 
 type ImageSelectProps = {
   onSubmit: (values: {
@@ -8,7 +10,6 @@ type ImageSelectProps = {
     piecesX: number;
     piecesY: number;
     genNormals: boolean;
-    showPerf: boolean;
   }) => void;
 };
 
@@ -16,7 +17,9 @@ export default function ImageSelect({ onSubmit }: ImageSelectProps) {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [genNormals, setGenNormals] = useState(true);
-  const [showPerf, setShowPerf] = useState(false);
+  const dispatch = useAppDispatch();
+
+  const showPerf = useAppSelector((state) => state.game.showPerfStats);
 
   const [selectedPieceOption, setSelectedPieceOption] = useState(0);
 
@@ -70,7 +73,7 @@ export default function ImageSelect({ onSubmit }: ImageSelectProps) {
           type="checkbox"
           checked={showPerf}
           onChange={(e) => {
-            setShowPerf(e.target.checked);
+            dispatch(setShowPerfStats(e.target.checked));
           }}
         />
       </label>
@@ -106,7 +109,6 @@ export default function ImageSelect({ onSubmit }: ImageSelectProps) {
               piecesX: piecesOptions[selectedPieceOption][0],
               piecesY: piecesOptions[selectedPieceOption][1],
               genNormals,
-              showPerf,
             });
           }
         }}
