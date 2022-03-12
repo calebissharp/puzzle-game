@@ -10,10 +10,11 @@ type GameInitialState = {
   piecesX: number;
   piecesY: number;
   genNormals?: boolean;
+  showPerf?: boolean;
 };
 
 const Home: NextPage = () => {
-  const [gameState, setGameState] = useState<GameInitialState | null>(null);
+  const [gameOptions, setGameOptions] = useState<GameInitialState | null>(null);
 
   return (
     <div>
@@ -23,17 +24,18 @@ const Home: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      {gameState ? (
+      {gameOptions ? (
         <Game
-          image={gameState.image}
-          piecesX={gameState.piecesX}
-          piecesY={gameState.piecesY}
-          genNormals={gameState.genNormals}
+          image={gameOptions.image}
+          piecesX={gameOptions.piecesX}
+          piecesY={gameOptions.piecesY}
+          genNormals={gameOptions.genNormals}
+          showPerf={gameOptions.showPerf}
         />
       ) : (
         <ImageSelect
-          onSubmit={({ image, piecesX, piecesY, genNormals }) => {
-            setGameState({ image, piecesX, piecesY, genNormals });
+          onSubmit={({ image, piecesX, piecesY, genNormals, showPerf }) => {
+            setGameOptions({ image, piecesX, piecesY, genNormals, showPerf });
           }}
         />
       )}

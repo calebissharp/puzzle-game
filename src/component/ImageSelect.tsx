@@ -8,6 +8,7 @@ type ImageSelectProps = {
     piecesX: number;
     piecesY: number;
     genNormals: boolean;
+    showPerf: boolean;
   }) => void;
 };
 
@@ -15,6 +16,7 @@ export default function ImageSelect({ onSubmit }: ImageSelectProps) {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [genNormals, setGenNormals] = useState(true);
+  const [showPerf, setShowPerf] = useState(false);
 
   const [selectedPieceOption, setSelectedPieceOption] = useState(0);
 
@@ -62,6 +64,17 @@ export default function ImageSelect({ onSubmit }: ImageSelectProps) {
         />
       </label>
 
+      <label>
+        Show performance stats
+        <input
+          type="checkbox"
+          checked={showPerf}
+          onChange={(e) => {
+            setShowPerf(e.target.checked);
+          }}
+        />
+      </label>
+
       {image && (
         <div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -93,6 +106,7 @@ export default function ImageSelect({ onSubmit }: ImageSelectProps) {
               piecesX: piecesOptions[selectedPieceOption][0],
               piecesY: piecesOptions[selectedPieceOption][1],
               genNormals,
+              showPerf,
             });
           }
         }}

@@ -16,6 +16,7 @@ type UsePuzzleParams = {
   piecesX: number;
   piecesY: number;
   genNormals?: boolean;
+  showPerf?: boolean;
 };
 
 export default function usePuzzle({
@@ -85,7 +86,12 @@ export default function usePuzzle({
   const canvasProps: ComponentPropsWithRef<"canvas"> = {
     ref: (canvas) => {
       if (canvas && !isInitialized && !initializing.current) {
-        puzzleGame.current = new PuzzleGame(imageUrl, piecesX, piecesY, canvas);
+        puzzleGame.current = new PuzzleGame({
+          imageUrl,
+          puzzleWidth: piecesX,
+          puzzleHeight: piecesY,
+          canvas,
+        });
 
         initialize().then(start);
       }

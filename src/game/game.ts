@@ -12,11 +12,21 @@ type LoadOptions = {
   genNormals?: boolean;
 };
 
+type PuzzleGameOptions = {
+  imageUrl: string;
+  puzzleWidth: number;
+  puzzleHeight: number;
+  canvas: HTMLCanvasElement;
+  showPerf?: boolean;
+};
+
 export class PuzzleGame extends EventEmitter {
   gl: WebGLRenderingContext;
 
   PUZZLE_WIDTH: number;
   PUZZLE_HEIGHT: number;
+
+  zoomSensitivity = 0.002;
 
   camera: Camera;
 
@@ -37,14 +47,15 @@ export class PuzzleGame extends EventEmitter {
 
   background: Rectangle | null = null;
 
-  stats: Stats;
+  stats: Stats | null = null;
 
-  constructor(
-    imageUrl: string,
-    puzzleWidth: number,
-    puzzleHeight: number,
-    canvas: HTMLCanvasElement
-  ) {
+  constructor({
+    imageUrl,
+    puzzleWidth,
+    puzzleHeight,
+    canvas,
+    showPerf,
+  }: PuzzleGameOptions) {
     super();
 
     this.PUZZLE_WIDTH = puzzleWidth;
@@ -71,8 +82,10 @@ export class PuzzleGame extends EventEmitter {
 
     this.camera = new Camera(this.gl.canvas.width, this.gl.canvas.height);
 
-    this.stats = new Stats();
-    this.stats.showPanel(0);
+    if (showPerf) {
+      this.stats = new Stats();
+      this.stats.showPanel(0);
+    }
 
     window.addEventListener("resize", this.onResize.bind(this));
   }
@@ -170,7 +183,9 @@ export class PuzzleGame extends EventEmitter {
   }
 
   start() {
-    document.body.append(this.stats.dom);
+    if (this.stats) {
+      document.body.append(this.stats.dom);
+    }
 
     requestAnimationFrame(this.render.bind(this));
   }
@@ -184,19 +199,23 @@ export class PuzzleGame extends EventEmitter {
     this.lastTime = now;
     const elapsed = time - this.startTime;
 
-    this.stats.begin();
+    if (this.stats) this.stats.begin();
 
     this.update(deltaTime, elapsed);
     this.draw();
 
-    this.stats.end();
+    if (this.stats) this.stats.end();
 
     requestAnimationFrame(this.render.bind(this));
   }
 
   onWheel(e: WheelEvent) {
     e.preventDefault();
-    this.camera.zoom = clamp(0.1, 5, this.camera.zoom + e.deltaY * 0.005);
+    this.camera.zoom = clamp(
+      0.1,
+      5,
+      this.camera.zoom + e.deltaY * this.zoomSensitivity
+    );
     this.camera.updateProjection(this.gl.canvas.width, this.gl.canvas.height);
   }
 

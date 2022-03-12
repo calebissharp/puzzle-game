@@ -5,15 +5,17 @@ import { throttle } from "lodash";
 import usePuzzle from "../hook/usePuzzle";
 import styles from "../../styles/Home.module.scss";
 import { formatTime } from "../util";
+import GameControls from "./GameControls";
 
 type GameProps = {
   image: HTMLImageElement;
   piecesX: number;
   piecesY: number;
   genNormals?: boolean;
+  showPerf?: boolean;
 };
 
-const Game = ({ image, piecesX, piecesY, genNormals }: GameProps) => {
+const Game = ({ image, piecesX, piecesY, genNormals, showPerf }: GameProps) => {
   const [progress, setProgress] = useState(0);
   const [imageDimensions, setImageDimensions] = useState<[number, number]>();
   const [eta, setEta] = useState<number>();
@@ -43,6 +45,7 @@ const Game = ({ image, piecesX, piecesY, genNormals }: GameProps) => {
     piecesX,
     piecesY,
     genNormals,
+    showPerf,
     onLoadImage: (image) => {
       setImageDimensions([image.width, image.height]);
     },
