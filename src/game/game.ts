@@ -68,7 +68,9 @@ export class PuzzleGame extends EventEmitter {
 
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    const gl = canvas.getContext("webgl");
+    const gl = canvas.getContext("webgl", {
+      antialias: true,
+    });
     if (!gl) {
       throw new Error("Failed to load WebGL context");
 
