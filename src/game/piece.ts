@@ -47,8 +47,8 @@ export class Piece {
   positionLocation: number;
   texcoordLocation: number;
   fragPosLocation: number;
-  viewPosLocation: WebGLUniformLocation;
-  lightPosLocation: WebGLUniformLocation;
+  // viewPosLocation: WebGLUniformLocation;
+  // lightPosLocation: WebGLUniformLocation;
   matrixLocation: WebGLUniformLocation;
   textureMatrixLocation: WebGLUniformLocation;
   textureLocation: WebGLUniformLocation;
@@ -147,16 +147,16 @@ export class Piece {
     if (!bumpMapLocation) throw new Error("Could not get uniform location");
     this.bumpMapLocation = bumpMapLocation;
 
-    const viewPosLocation = gl.getUniformLocation(this.program, "ts_view_pos");
-    if (!viewPosLocation) throw new Error("Could not get uniform location");
-    this.viewPosLocation = viewPosLocation;
+    // const viewPosLocation = gl.getUniformLocation(this.program, "ts_view_pos");
+    // if (!viewPosLocation) throw new Error("Could not get uniform location");
+    // this.viewPosLocation = viewPosLocation;
 
-    const lightPosLocation = gl.getUniformLocation(
-      this.program,
-      "ts_light_pos"
-    );
-    if (!lightPosLocation) throw new Error("Could not get uniform location");
-    this.lightPosLocation = lightPosLocation;
+    // const lightPosLocation = gl.getUniformLocation(
+    //   this.program,
+    //   "ts_light_pos"
+    // );
+    // if (!lightPosLocation) throw new Error("Could not get uniform location");
+    // this.lightPosLocation = lightPosLocation;
   }
 
   draw(gl: WebGLRenderingContext, camera: Camera) {
@@ -206,9 +206,9 @@ export class Piece {
     const lightPos = vec3.fromValues(camera.x, camera.y, -0.4);
     vec3.transformMat4(lightPos, lightPos, camera.projection);
 
-    gl.uniform3fv(this.viewPosLocation, cameraPos);
+    // gl.uniform3fv(this.viewPosLocation, cameraPos);
 
-    gl.uniform3fv(this.lightPosLocation, lightPos);
+    // gl.uniform3fv(this.lightPosLocation, lightPos);
 
     // Tell the shader to get the texture from texture unit 0
     gl.uniform1i(this.textureLocation, 0);
@@ -468,8 +468,15 @@ uniform sampler2D u_texture;
 uniform sampler2D u_bumpmap;
  
 void main() {
-  vec3 light_dir = normalize(ts_light_pos - ts_frag_pos);
-  vec3 view_dir = normalize(ts_view_pos - ts_frag_pos);
+  // Hardcode light/view positions so pieces are lit consistently
+
+  vec3 light_pos = vec3(1.0, 1.0, 1.0);
+  vec3 light_dir = normalize(light_pos - ts_frag_pos);
+  // vec3 light_dir = normalize(ts_frag_pos - ts_frag_pos);
+
+  // vec3 view_dir = normalize(ts_view_pos - ts_frag_pos);
+  vec3 view_dir = vec3(0.0, 0.0, 0.0);
+
   vec3 halfway_dir = normalize(light_dir + view_dir);
 
 
@@ -481,8 +488,8 @@ void main() {
   vec3 norm = normalize(texture2D(u_bumpmap, uv).rgb * 2.0 - 1.0);
   float diffuse = max(dot(light_dir, norm), 0.0);
 
-  float specularStrength = 0.5;
-  float shininess = 16.0;
+  float specularStrength = 10.0;
+  float shininess = 64.0;
 
   vec3 reflect_dir = reflect(-light_dir, norm);
   float spec = pow(max(dot(norm, halfway_dir), 0.0), shininess);
