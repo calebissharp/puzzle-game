@@ -470,7 +470,7 @@ uniform sampler2D u_bumpmap;
 void main() {
   // Hardcode light/view positions so pieces are lit consistently
 
-  vec3 light_pos = vec3(1.0, 1.0, 1.0);
+  vec3 light_pos = ts_frag_pos + vec3(1.0, 1.0, 1.0);
   vec3 light_dir = normalize(light_pos - ts_frag_pos);
   // vec3 light_dir = normalize(ts_frag_pos - ts_frag_pos);
 
