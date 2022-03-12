@@ -8,6 +8,10 @@ import { Rectangle } from "./rectangle";
 import { clamp, loadImage } from "./util";
 import { EventEmitter } from "events";
 
+type LoadOptions = {
+  genNormals?: boolean;
+};
+
 export class PuzzleGame extends EventEmitter {
   gl: WebGLRenderingContext;
 
@@ -73,7 +77,7 @@ export class PuzzleGame extends EventEmitter {
     window.addEventListener("resize", this.onResize.bind(this));
   }
 
-  async load() {
+  async load({ genNormals = true }: LoadOptions) {
     const program = getPieceShaderProgram(this.gl);
 
     this.image = await loadImage(this.imageUrl);
@@ -99,6 +103,7 @@ export class PuzzleGame extends EventEmitter {
       puzzleWidth: this.PUZZLE_WIDTH,
       puzzleHeight: this.PUZZLE_HEIGHT,
       pieceBorder: true,
+      genNormals,
       onProgress: (n, total, dt) => {
         this.emit("loadProgress", n, total, dt);
       },
@@ -190,6 +195,7 @@ export class PuzzleGame extends EventEmitter {
   }
 
   onWheel(e: WheelEvent) {
+    e.preventDefault();
     this.camera.zoom = clamp(0.1, 5, this.camera.zoom + e.deltaY * 0.005);
     this.camera.updateProjection(this.gl.canvas.width, this.gl.canvas.height);
   }
@@ -220,8 +226,8 @@ export class PuzzleGame extends EventEmitter {
     this.dragging = true;
 
     // Don't select piece if middle mouse button is pressed or if the meta key
-    // (cmd) is pressed
-    if (e.button !== 1 && !e.metaKey) {
+    // (cmd) or shift is pressed
+    if (e.button !== 1 && !e.metaKey && !e.shiftKey) {
       const invProjection = mat4.create();
       mat4.invert(invProjection, this.camera.projection);
 

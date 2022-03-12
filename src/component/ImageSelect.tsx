@@ -3,12 +3,18 @@ import { Button, styled } from "@nextui-org/react";
 import { getPuzzleDimensions, loadImage } from "../game/util";
 
 type ImageSelectProps = {
-  onSubmit: (image: HTMLImageElement, piecesX: number, piecesY: number) => void;
+  onSubmit: (values: {
+    image: HTMLImageElement;
+    piecesX: number;
+    piecesY: number;
+    genNormals: boolean;
+  }) => void;
 };
 
 export default function ImageSelect({ onSubmit }: ImageSelectProps) {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [genNormals, setGenNormals] = useState(true);
 
   const [selectedPieceOption, setSelectedPieceOption] = useState(0);
 
@@ -45,6 +51,17 @@ export default function ImageSelect({ onSubmit }: ImageSelectProps) {
         Choose image
       </Button>
 
+      <label>
+        Generate normals
+        <input
+          type="checkbox"
+          checked={genNormals}
+          onChange={(e) => {
+            setGenNormals(e.target.checked);
+          }}
+        />
+      </label>
+
       {image && (
         <div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -71,7 +88,12 @@ export default function ImageSelect({ onSubmit }: ImageSelectProps) {
         disabled={!image}
         onClick={() => {
           if (image && piecesOptions?.[selectedPieceOption]) {
-            onSubmit(image, ...piecesOptions[selectedPieceOption]);
+            onSubmit({
+              image,
+              piecesX: piecesOptions[selectedPieceOption][0],
+              piecesY: piecesOptions[selectedPieceOption][1],
+              genNormals,
+            });
           }
         }}
       >

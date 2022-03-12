@@ -15,6 +15,7 @@ type UsePuzzleParams = {
   imageUrl: string;
   piecesX: number;
   piecesY: number;
+  genNormals?: boolean;
 };
 
 export default function usePuzzle({
@@ -24,6 +25,7 @@ export default function usePuzzle({
   imageUrl,
   piecesX,
   piecesY,
+  genNormals = true,
 }: UsePuzzleParams) {
   const puzzleGame = useRef<PuzzleGame | null>(null);
   const initializing = useRef<boolean>(false);
@@ -40,7 +42,7 @@ export default function usePuzzle({
       console.error("Puzzle is already being initialized");
     } else {
       initializing.current = true;
-      await puzzleGame.current.load();
+      await puzzleGame.current.load({ genNormals });
       setIsInitialized(true);
       initializing.current = false;
     }

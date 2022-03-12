@@ -9,6 +9,7 @@ type GameInitialState = {
   image: HTMLImageElement;
   piecesX: number;
   piecesY: number;
+  genNormals?: boolean;
 };
 
 const Home: NextPage = () => {
@@ -27,11 +28,12 @@ const Home: NextPage = () => {
           image={gameState.image}
           piecesX={gameState.piecesX}
           piecesY={gameState.piecesY}
+          genNormals={gameState.genNormals}
         />
       ) : (
         <ImageSelect
-          onSubmit={(image, piecesX, piecesY) => {
-            setGameState({ image, piecesX, piecesY });
+          onSubmit={({ image, piecesX, piecesY, genNormals }) => {
+            setGameState({ image, piecesX, piecesY, genNormals });
           }}
         />
       )}

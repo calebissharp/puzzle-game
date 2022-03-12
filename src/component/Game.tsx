@@ -10,9 +10,10 @@ type GameProps = {
   image: HTMLImageElement;
   piecesX: number;
   piecesY: number;
+  genNormals?: boolean;
 };
 
-const Game = ({ image, piecesX, piecesY }: GameProps) => {
+const Game = ({ image, piecesX, piecesY, genNormals }: GameProps) => {
   const [progress, setProgress] = useState(0);
   const [imageDimensions, setImageDimensions] = useState<[number, number]>();
   const [eta, setEta] = useState<number>();
@@ -41,6 +42,7 @@ const Game = ({ image, piecesX, piecesY }: GameProps) => {
     imageUrl: image.src,
     piecesX,
     piecesY,
+    genNormals,
     onLoadImage: (image) => {
       setImageDimensions([image.width, image.height]);
     },

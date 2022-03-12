@@ -15,6 +15,7 @@ type CreatePuzzlePiecesOptions = {
   image: HTMLImageElement;
   puzzleWidth: number;
   puzzleHeight: number;
+  genNormals?: boolean;
   drawBounds?: boolean;
   pieceBorder?: boolean;
   onProgress?: (n: number, total: number, dt: number) => void;
@@ -255,12 +256,17 @@ export async function genPuzzlePieceTextures({
   image,
   puzzleWidth,
   puzzleHeight,
+  genNormals = true,
   drawBounds = false,
   pieceBorder = false,
   onProgress,
 }: CreatePuzzlePiecesOptions): Promise<PieceTexture[]> {
   const pieceWidth = Math.ceil(image.width / puzzleWidth);
   const pieceHeight = Math.ceil(image.height / puzzleHeight);
+
+  if (!genNormals) {
+    console.log("Normal map generation disabled");
+  }
 
   const MAX_JOINER_HEIGHT = Math.ceil(Math.max(pieceWidth, pieceHeight) * 0.2);
 
@@ -351,10 +357,6 @@ export async function genPuzzlePieceTextures({
 
       ctx.globalCompositeOperation = "source-over";
 
-      // ctx.lineWidth = 1;
-      // ctx.strokeStyle = "#828282";
-      // ctx.stroke();
-
       const url = canvas.toDataURL("image/png");
       const pieceImage = document.createElement("img");
       pieceImage.width = canvasWidth;
@@ -375,10 +377,7 @@ export async function genPuzzlePieceTextures({
 
       bctx.rect(0, 0, canvasWidth, canvasHeight);
       bctx.fillStyle = `rgb(128,128,255)`;
-      // bctx.fillStyle = `rgb(0,255,0)`;
       bctx.fill(path);
-
-      const borderPixels: number[] = [];
 
       let imageData = bctx.getImageData(0, 0, canvasWidth, canvasHeight);
       const data = imageData.data;
@@ -387,7 +386,14 @@ export async function genPuzzlePieceTextures({
         if (data[i + 3] > 0) data[i + 3] = 255;
       }
 
-      drawNormal(Math.ceil(pieceWidth * 0.05), data, canvasWidth, canvasHeight);
+      if (genNormals) {
+        drawNormal(
+          Math.ceil(pieceWidth * 0.05),
+          data,
+          canvasWidth,
+          canvasHeight
+        );
+      }
 
       bctx.putImageData(imageData, 0, 0);
 
