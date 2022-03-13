@@ -10,7 +10,6 @@ type GameInitialState = {
   piecesX: number;
   piecesY: number;
   genNormals?: boolean;
-  showPerf?: boolean;
 };
 
 const Home: NextPage = () => {

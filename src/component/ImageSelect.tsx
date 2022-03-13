@@ -115,6 +115,22 @@ export default function ImageSelect({ onSubmit }: ImageSelectProps) {
       >
         Continue
       </Button>
+
+      <Button
+        color="secondary"
+        onClick={() => {
+          loadImage("/puzzles/uv.jpg").then((image) => {
+            onSubmit({
+              image,
+              piecesX: 16,
+              piecesY: 16,
+              genNormals,
+            });
+          });
+        }}
+      >
+        Use debug image
+      </Button>
     </div>
   );
 }
