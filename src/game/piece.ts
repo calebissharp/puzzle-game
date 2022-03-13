@@ -1,7 +1,5 @@
 import { mat4, vec3 } from "gl-matrix";
-import { throttle } from "lodash";
 import { Camera } from "./camera";
-import { PieceTexture } from "./pieceGen";
 import { initShaderProgram, TextureInfo } from "./render";
 
 type PieceOptions = {
@@ -24,8 +22,8 @@ export class Piece {
   scale = { x: 1, y: 1 };
   j: number;
   k: number;
-  active: boolean = false;
-  locked: boolean = false;
+  active = false;
+  locked = false;
   sliceX: number;
   sliceY: number;
   sliceWidth: number;
@@ -100,7 +98,7 @@ export class Piece {
     this.positionBuffer = positionBuffer;
 
     // Put a unit quad in the buffer
-    var positions = [
+    const positions = [
       0, 0, 0, 1, 1, 0,
 
       1, 0, 0, 1, 1, 1,
@@ -114,7 +112,7 @@ export class Piece {
     this.texCoordBuffer = texcoordBuffer;
 
     // Put texcoords in the buffer
-    var texcoords = [
+    const texcoords = [
       0, 0, 0, 1, 1, 0,
 
       1, 0, 0, 1, 1, 1,
@@ -223,7 +221,7 @@ export class Piece {
     this.position.y += (Math.random() - 0.5) * 10;
   }
 
-  update(delta: number, elapsed: number) {
+  update(_delta: number, _elapsed: number) {
     if (!this.locked) {
       // this.jiggle();
     }

@@ -1,7 +1,8 @@
 import React from "react";
-import { Checkbox, Modal, Text } from "@nextui-org/react";
-import { useAppDispatch, useAppSelector } from "../hook/store";
-import { setShowPerfStats } from "../game/slice";
+import { Button, Checkbox, Collapse, Modal, Text } from "@nextui-org/react";
+import usePerf from "../game/hooks/usePerf";
+import { useGame } from "../game/hooks/useGame";
+import useJiggle from "../game/hooks/useJiggle";
 
 type OptionsMenuProps = {
   visible: boolean;
@@ -9,8 +10,10 @@ type OptionsMenuProps = {
 };
 
 export default function OptionsMenu({ visible, onClose }: OptionsMenuProps) {
-  const dispatch = useAppDispatch();
-  const showPerf = useAppSelector((state) => state.game.showPerfStats);
+  const { game } = useGame();
+
+  const [showPerf, setShowPerf] = usePerf();
+  const [jiggling, setJiggling] = useJiggle();
 
   return (
     <Modal closeButton open={visible} onClose={onClose}>
@@ -22,12 +25,34 @@ export default function OptionsMenu({ visible, onClose }: OptionsMenuProps) {
         <Checkbox
           checked={showPerf}
           onChange={(e) => {
-            dispatch(setShowPerfStats(e.target.checked));
+            setShowPerf(e.target.checked);
           }}
           animated={false}
         >
           Show performance stats
         </Checkbox>
+
+        <Collapse.Group>
+          <Collapse title="Debug options">
+            <Button
+              onClick={() => {
+                if (game) {
+                  // game.solve()
+                }
+              }}
+            >
+              Solve puzzle
+            </Button>
+
+            <Button
+              onClick={() => {
+                setJiggling(!jiggling);
+              }}
+            >
+              Toggle Jiggle ({jiggling ? "ON" : "OFF"})
+            </Button>
+          </Collapse>
+        </Collapse.Group>
       </Modal.Body>
       <Modal.Footer />
     </Modal>

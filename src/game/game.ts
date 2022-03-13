@@ -7,7 +7,6 @@ import { genPuzzlePieceTextures } from "./pieceGen";
 import { Rectangle } from "./rectangle";
 import { clamp, loadImage } from "./util";
 import { EventEmitter } from "events";
-import { store } from "../store";
 
 type LoadOptions = {
   genNormals?: boolean;
@@ -34,9 +33,9 @@ export class PuzzleGame extends EventEmitter {
   imageUrl: string;
   image: HTMLImageElement | null = null;
 
-  startTime: number = 0;
-  elapsedTime: number = 0;
-  lastTime: number = 0;
+  startTime = 0;
+  elapsedTime = 0;
+  lastTime = 0;
 
   private dragging = false;
 
@@ -50,12 +49,13 @@ export class PuzzleGame extends EventEmitter {
 
   stats: Stats;
 
+  jiggling = false;
+
   constructor({
     imageUrl,
     puzzleWidth,
     puzzleHeight,
     canvas,
-    showPerf,
   }: PuzzleGameOptions) {
     super();
 
@@ -74,8 +74,6 @@ export class PuzzleGame extends EventEmitter {
     });
     if (!gl) {
       throw new Error("Failed to load WebGL context");
-
-      return;
     }
 
     this.gl = gl;
@@ -87,6 +85,8 @@ export class PuzzleGame extends EventEmitter {
 
     this.stats = new Stats();
     this.stats.showPanel(0);
+
+    this.showPerf = false;
 
     window.addEventListener("resize", this.onResize.bind(this));
   }
@@ -161,9 +161,7 @@ export class PuzzleGame extends EventEmitter {
   }
 
   update(deltaTime: number, elapsed: number) {
-    const state = store.getState();
-
-    this.stats.dom.hidden = !state.game.showPerfStats;
+    if (this.jiggling) this.pieces.forEach((piece) => piece.jiggle());
 
     this.pieces.forEach((piece) => piece.update(deltaTime, elapsed));
   }
@@ -188,13 +186,7 @@ export class PuzzleGame extends EventEmitter {
   }
 
   start() {
-    const state = store.getState();
-
     document.body.append(this.stats.dom);
-
-    if (!state.game.showPerfStats) {
-      this.stats.dom.hidden = true;
-    }
 
     requestAnimationFrame(this.render.bind(this));
   }
@@ -343,5 +335,13 @@ export class PuzzleGame extends EventEmitter {
 
       piece.locked = false;
     }
+  }
+
+  set showPerf(isVisible: boolean) {
+    this.stats.dom.hidden = !isVisible;
+  }
+
+  get showPerf() {
+    return !this.stats.dom.hidden;
   }
 }

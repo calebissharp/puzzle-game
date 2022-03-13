@@ -19,21 +19,21 @@ function getCurvePoints(
   isClosed = isClosed ? isClosed : false;
   numOfSegments = numOfSegments ? numOfSegments : 16;
 
-  var _pts = [],
-    res = [], // clone array
-    x,
-    y, // our x,y coords
-    t1x,
-    t2x,
-    t1y,
-    t2y, // tension vectors
-    c1,
-    c2,
-    c3,
-    c4, // cardinal points
-    st,
-    t,
-    i; // steps based on num. of segments
+  let _pts = [];
+  const res = []; // clone array
+  let x;
+  let y; // our x,y coords
+  let t1x;
+  let t2x;
+  let t1y;
+  let t2y; // tension vectors
+  let c1;
+  let c2;
+  let c3;
+  let c4; // cardinal points
+  let st;
+  let t;
+  let i; // steps based on num. of segments
 
   // clone array so we don't change the original
   //

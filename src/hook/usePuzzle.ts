@@ -9,7 +9,6 @@ import {
 import { PuzzleGame } from "../game/game";
 
 type UsePuzzleParams = {
-  onChangeGameState?: () => void;
   onLoadProgress?: (step: number, stepsRemaining: number, dt: number) => void;
   onLoadImage?: (image: HTMLImageElement) => void;
   imageUrl: string;
@@ -21,7 +20,6 @@ type UsePuzzleParams = {
 export default function usePuzzle({
   onLoadProgress,
   onLoadImage,
-  onChangeGameState,
   imageUrl,
   piecesX,
   piecesY,
