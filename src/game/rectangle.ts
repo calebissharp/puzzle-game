@@ -37,7 +37,7 @@ export class Rectangle {
     this.positionBuffer = positionBuffer;
 
     // Put a unit quad in the buffer
-    var positions = [
+    const positions = [
       0, 0, 0, 1, 1, 0,
 
       1, 0, 0, 1, 1, 1,

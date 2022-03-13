@@ -1,4 +1,4 @@
-import { chunk, flatten, mean, min, reverse, sum } from "lodash";
+import { chunk, flatten, mean, reverse, sum } from "lodash";
 import { drawPoints } from "./curve";
 import { random } from "./util";
 import { vec2, vec3 } from "gl-matrix";
@@ -65,13 +65,12 @@ const INITIAL_Z = -0.5;
 export function drawNormal(
   iterations: number,
   data: Uint8ClampedArray,
-  width: number,
-  height: number
+  width: number
 ) {
   let vectors: (vec3 | null)[] = Array.from({ length: data.length / 4 }).map(
     () => null
   );
-  let borderPixels = Array.from({ length: data.length / 4 }).map(() => false);
+  const borderPixels = Array.from({ length: data.length / 4 }).map(() => false);
 
   for (let i = 0; i < data.length; i += 4) {
     if (data[i + 3] < 255) continue;
@@ -127,7 +126,7 @@ export function drawNormal(
 
   // Smooth initial normals based on surrounding normals
   for (let step = 0; step < 5; step++) {
-    let newVectors = [...vectors];
+    const newVectors = [...vectors];
 
     for (let i = 0; i <= vectors.length; i++) {
       const angle = vectors[i];
@@ -162,7 +161,7 @@ export function drawNormal(
     vectors = [...newVectors];
   }
 
-  let rotateStep = (Math.PI / 2 / iterations) * (-1 - INITIAL_Z);
+  const rotateStep = (Math.PI / 2 / iterations) * (-1 - INITIAL_Z);
 
   for (let n = 0; n <= iterations - 1; n++) {
     const oldBorderPixels = [...borderPixels];
@@ -224,7 +223,7 @@ export function drawNormal(
   // Smooth normals
   const p1 = performance.now();
   for (let step = 0; step < 8; step++) {
-    let oldData = [...data];
+    const oldData = [...data];
 
     for (let i = 0; i < data.length; i += 4) {
       if (data[i + 3] < 255) continue;
@@ -258,7 +257,6 @@ export async function genPuzzlePieceTextures({
   puzzleHeight,
   genNormals = true,
   drawBounds = false,
-  pieceBorder = false,
   onProgress,
 }: CreatePuzzlePiecesOptions): Promise<PieceTexture[]> {
   const pieceWidth = Math.ceil(image.width / puzzleWidth);
@@ -337,8 +335,7 @@ export async function genPuzzlePieceTextures({
         canvasWidth,
         canvasHeight,
         pieceLeft?.pointsRight,
-        pieceAbove?.pointsBottom,
-        pieceBorder
+        pieceAbove?.pointsBottom
       );
 
       ctx.globalCompositeOperation = "source-in";
@@ -379,7 +376,7 @@ export async function genPuzzlePieceTextures({
       bctx.fillStyle = `rgb(128,128,255)`;
       bctx.fill(path);
 
-      let imageData = bctx.getImageData(0, 0, canvasWidth, canvasHeight);
+      const imageData = bctx.getImageData(0, 0, canvasWidth, canvasHeight);
       const data = imageData.data;
 
       for (let i = 0; i < data.length; i += 4) {
@@ -387,12 +384,7 @@ export async function genPuzzlePieceTextures({
       }
 
       if (genNormals) {
-        drawNormal(
-          Math.ceil(pieceWidth * 0.05),
-          data,
-          canvasWidth,
-          canvasHeight
-        );
+        drawNormal(Math.ceil(pieceWidth * 0.05), data, canvasWidth);
       }
 
       bctx.putImageData(imageData, 0, 0);
@@ -459,8 +451,7 @@ function drawPiece(
   canvasWidth: number,
   canvasHeight: number,
   leftPoints?: number[],
-  topPoints?: number[],
-  drawBorder?: boolean
+  topPoints?: number[]
 ): [number[] | null, number[] | null, Path2D] {
   const leftSide = (canvasWidth - pieceWidth) / 2;
   const rightSide = leftSide + pieceWidth;

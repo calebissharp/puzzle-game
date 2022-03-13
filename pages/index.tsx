@@ -10,7 +10,6 @@ type GameInitialState = {
   piecesX: number;
   piecesY: number;
   genNormals?: boolean;
-  showPerf?: boolean;
 };
 
 const Home: NextPage = () => {
@@ -30,12 +29,11 @@ const Home: NextPage = () => {
           piecesX={gameOptions.piecesX}
           piecesY={gameOptions.piecesY}
           genNormals={gameOptions.genNormals}
-          showPerf={gameOptions.showPerf}
         />
       ) : (
         <ImageSelect
-          onSubmit={({ image, piecesX, piecesY, genNormals, showPerf }) => {
-            setGameOptions({ image, piecesX, piecesY, genNormals, showPerf });
+          onSubmit={({ image, piecesX, piecesY, genNormals }) => {
+            setGameOptions({ image, piecesX, piecesY, genNormals });
           }}
         />
       )}

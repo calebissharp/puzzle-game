@@ -33,9 +33,9 @@ export class PuzzleGame extends EventEmitter {
   imageUrl: string;
   image: HTMLImageElement | null = null;
 
-  startTime: number = 0;
-  elapsedTime: number = 0;
-  lastTime: number = 0;
+  startTime = 0;
+  elapsedTime = 0;
+  lastTime = 0;
 
   private dragging = false;
 
@@ -47,14 +47,15 @@ export class PuzzleGame extends EventEmitter {
 
   background: Rectangle | null = null;
 
-  stats: Stats | null = null;
+  stats: Stats;
+
+  jiggling = false;
 
   constructor({
     imageUrl,
     puzzleWidth,
     puzzleHeight,
     canvas,
-    showPerf,
   }: PuzzleGameOptions) {
     super();
 
@@ -68,11 +69,11 @@ export class PuzzleGame extends EventEmitter {
 
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    const gl = canvas.getContext("webgl");
+    const gl = canvas.getContext("webgl", {
+      antialias: true,
+    });
     if (!gl) {
       throw new Error("Failed to load WebGL context");
-
-      return;
     }
 
     this.gl = gl;
@@ -82,10 +83,10 @@ export class PuzzleGame extends EventEmitter {
 
     this.camera = new Camera(this.gl.canvas.width, this.gl.canvas.height);
 
-    if (showPerf) {
-      this.stats = new Stats();
-      this.stats.showPanel(0);
-    }
+    this.stats = new Stats();
+    this.stats.showPanel(0);
+
+    this.showPerf = false;
 
     window.addEventListener("resize", this.onResize.bind(this));
   }
@@ -160,6 +161,8 @@ export class PuzzleGame extends EventEmitter {
   }
 
   update(deltaTime: number, elapsed: number) {
+    if (this.jiggling) this.pieces.forEach((piece) => piece.jiggle());
+
     this.pieces.forEach((piece) => piece.update(deltaTime, elapsed));
   }
 
@@ -183,9 +186,7 @@ export class PuzzleGame extends EventEmitter {
   }
 
   start() {
-    if (this.stats) {
-      document.body.append(this.stats.dom);
-    }
+    document.body.append(this.stats.dom);
 
     requestAnimationFrame(this.render.bind(this));
   }
@@ -199,12 +200,12 @@ export class PuzzleGame extends EventEmitter {
     this.lastTime = now;
     const elapsed = time - this.startTime;
 
-    if (this.stats) this.stats.begin();
+    this.stats.begin();
 
     this.update(deltaTime, elapsed);
     this.draw();
 
-    if (this.stats) this.stats.end();
+    this.stats.end();
 
     requestAnimationFrame(this.render.bind(this));
   }
@@ -334,5 +335,13 @@ export class PuzzleGame extends EventEmitter {
 
       piece.locked = false;
     }
+  }
+
+  set showPerf(isVisible: boolean) {
+    this.stats.dom.hidden = !isVisible;
+  }
+
+  get showPerf() {
+    return !this.stats.dom.hidden;
   }
 }

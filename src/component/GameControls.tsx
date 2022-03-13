@@ -1,56 +1,42 @@
-import React, { useEffect, useState } from "react";
-import { styled } from "@nextui-org/react";
-import { formatTime } from "../util";
+import React, { useState } from "react";
+import { Button } from "@nextui-org/react";
+import { Gear } from "phosphor-react";
+import OptionsMenu from "./OptionsMenu";
+import Timer from "./Timer";
+import { useGame } from "../game/hooks/useGame";
 
 export default function GameControls() {
-  const [timeElapsed, setTimeElapsed] = useState(0);
+  const { progress } = useGame();
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTimeElapsed((t) => t + 1000);
-    }, 1000);
+  const [optionsOpen, setOptionsOpen] = useState(false);
 
-    return () => {
-      clearInterval(interval);
-    };
-  }, []);
+  const isLoaded = progress === 1;
+
+  if (!isLoaded) return null;
 
   return (
-    <Timer>
-      <TimerText aria-label="time elapsed">{formatTime(timeElapsed)}</TimerText>
-    </Timer>
+    <>
+      <Timer />
+
+      <Button
+        auto
+        icon={<Gear />}
+        onClick={() => setOptionsOpen(true)}
+        css={{
+          position: "absolute",
+          top: 0,
+          right: 0,
+          borderTopRightRadius: 0,
+          borderTopLeftRadius: 0,
+          borderBottomRightRadius: 0,
+          backgroundColor: "$gray700",
+        }}
+      />
+
+      <OptionsMenu
+        visible={optionsOpen}
+        onClose={() => setOptionsOpen(false)}
+      />
+    </>
   );
 }
-
-const Timer = styled("div", {
-  position: "absolute",
-  top: 0,
-  width: "100%",
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  pointerEvents: "none",
-});
-
-const TimerText = styled("div", {
-  backgroundColor: "#4d4b4b",
-  color: "#ebebeb",
-  padding: "$4",
-  opacity: 0.5,
-  paddingLeft: "$13",
-  paddingRight: "$13",
-  borderBottomLeftRadius: "$base",
-  borderBottomRightRadius: "$base",
-  borderStyle: "solid",
-  borderWidth: 4,
-  borderTopWidth: 0,
-  borderColor: "#363636",
-  fontSize: 20,
-  transition: "all 150ms ease",
-  pointerEvents: "all",
-  "&:hover": {
-    opacity: 1,
-    paddingTop: "$5",
-    boxShadow: "$sm",
-  },
-});
